@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Moon, Sun, Command, Terminal } from 'lucide-react';
+import { Moon, Sun, Monitor, Command, Terminal } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useTab } from '../context/TabContext';
@@ -12,7 +12,12 @@ interface HeaderProps {
 }
 
 export function Header({ openOrgDropdown, onOrgDropdownChange }: HeaderProps) {
-  const { theme, toggleTheme } = useTheme();
+  const { preference, setPreference } = useTheme();
+
+  const cycleTheme = () => {
+    const next = preference === 'system' ? 'light' : preference === 'light' ? 'dark' : 'system';
+    setPreference(next);
+  };
   const { selectedOrgId, setSelectedOrgId, login, isAuthenticated, user } = useAuth();
   const { setActiveTab } = useTab();
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
@@ -82,11 +87,14 @@ export function Header({ openOrgDropdown, onOrgDropdownChange }: HeaderProps) {
         <div className="w-px h-5 bg-[hsl(var(--border))]" />
 
         <button
-          onClick={toggleTheme}
+          onClick={cycleTheme}
           className="p-2 rounded hover:bg-[hsl(var(--muted))] transition-colors"
-          aria-label="Toggle theme"
+          aria-label={`Theme: ${preference}`}
+          title={`Theme: ${preference}`}
         >
-          {theme === 'dark' ? (
+          {preference === 'system' ? (
+            <Monitor className="w-4 h-4 text-[hsl(var(--foreground))]" />
+          ) : preference === 'dark' ? (
             <Moon className="w-4 h-4 text-[hsl(var(--foreground))]" />
           ) : (
             <Sun className="w-4 h-4 text-[hsl(var(--foreground))]" />

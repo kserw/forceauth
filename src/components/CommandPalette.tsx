@@ -9,6 +9,7 @@ import {
   Settings,
   Moon,
   Sun,
+  Monitor,
   LogOut,
   X
 } from 'lucide-react';
@@ -32,7 +33,7 @@ interface CommandPaletteProps {
 
 export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   const { setActiveTab } = useTab();
-  const { theme, toggleTheme } = useTheme();
+  const { preference, setPreference } = useTheme();
   const { logout, isAuthenticated } = useAuth();
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -46,10 +47,12 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
     { id: 'integrations', label: 'Integrations', description: 'Connected apps & packages', icon: Plug, action: () => { setActiveTab('integrations'); onClose(); }, category: 'navigation' },
     { id: 'permissions', label: 'Permissions', description: 'Access control & sharing', icon: Key, action: () => { setActiveTab('permissions'); onClose(); }, category: 'navigation' },
     { id: 'system', label: 'System', description: 'Org limits & audit logs', icon: Settings, action: () => { setActiveTab('system'); onClose(); }, category: 'navigation' },
-    // Actions
-    { id: 'toggle-theme', label: theme === 'dark' ? 'Light Mode' : 'Dark Mode', description: 'Toggle theme', icon: theme === 'dark' ? Sun : Moon, action: () => { toggleTheme(); onClose(); }, category: 'actions' },
+    // Actions - Theme
+    { id: 'theme-system', label: 'System Theme', description: preference === 'system' ? 'Currently active' : 'Match OS setting', icon: Monitor, action: () => { setPreference('system'); onClose(); }, category: 'actions' },
+    { id: 'theme-light', label: 'Light Mode', description: preference === 'light' ? 'Currently active' : 'Switch to light', icon: Sun, action: () => { setPreference('light'); onClose(); }, category: 'actions' },
+    { id: 'theme-dark', label: 'Dark Mode', description: preference === 'dark' ? 'Currently active' : 'Switch to dark', icon: Moon, action: () => { setPreference('dark'); onClose(); }, category: 'actions' },
     ...(isAuthenticated ? [{ id: 'logout', label: 'Logout', description: 'Sign out of SFDC', icon: LogOut, action: () => { logout(); onClose(); }, category: 'actions' as const }] : []),
-  ], [setActiveTab, onClose, theme, toggleTheme, logout, isAuthenticated]);
+  ], [setActiveTab, onClose, preference, setPreference, logout, isAuthenticated]);
 
   const filteredCommands = useMemo(() => {
     if (!query) return commands;
