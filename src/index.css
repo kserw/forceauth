@@ -1,0 +1,233 @@
+@import "tailwindcss";
+
+:root {
+  --font-mono: 'Geist Mono', 'IBM Plex Mono', 'SF Mono', 'Fira Code', 'Consolas', monospace;
+
+  --background: 0 0% 99%;
+  --background-secondary: 0 0% 96%;
+  --foreground: 0 0% 9%;
+  --foreground-secondary: 0 0% 32%;
+
+  --card: 0 0% 100%;
+  --card-hover: 0 0% 98%;
+  --card-foreground: 0 0% 9%;
+
+  --border: 0 0% 90%;
+  --border-hover: 0 0% 80%;
+
+  --muted: 0 0% 96%;
+  --muted-foreground: 0 0% 45%;
+
+  --accent: 0 0% 96%;
+  --accent-foreground: 0 0% 9%;
+
+  --primary: 0 0% 9%;
+  --primary-foreground: 0 0% 98%;
+
+  --success: 142 72% 36%;
+  --success-muted: 142 72% 95%;
+  --destructive: 0 84% 55%;
+  --destructive-muted: 0 84% 95%;
+  --warning: 45 93% 47%;
+  --warning-muted: 45 93% 95%;
+  --info: 200 80% 50%;
+  --info-muted: 200 80% 95%;
+
+  --ring: 0 0% 9%;
+  --radius: 6px;
+
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.03);
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+}
+
+.dark {
+  --background: 0 0% 2%;
+  --background-secondary: 0 0% 5%;
+  --foreground: 0 0% 92%;
+  --foreground-secondary: 0 0% 65%;
+
+  --card: 0 0% 4%;
+  --card-hover: 0 0% 6%;
+  --card-foreground: 0 0% 92%;
+
+  --border: 0 0% 10%;
+  --border-hover: 0 0% 16%;
+
+  --muted: 0 0% 8%;
+  --muted-foreground: 0 0% 50%;
+
+  --accent: 0 0% 10%;
+  --accent-foreground: 0 0% 92%;
+
+  --primary: 0 0% 92%;
+  --primary-foreground: 0 0% 4%;
+
+  --success: 142 72% 42%;
+  --success-muted: 142 72% 10%;
+  --destructive: 0 72% 50%;
+  --destructive-muted: 0 72% 10%;
+  --warning: 45 93% 47%;
+  --warning-muted: 45 93% 10%;
+  --info: 200 80% 50%;
+  --info-muted: 200 80% 10%;
+
+  --ring: 0 0% 92%;
+
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.5), 0 1px 2px -1px rgb(0 0 0 / 0.5);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.5);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.5);
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+html {
+  font-feature-settings: 'ss01', 'ss02', 'cv01', 'cv02';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: var(--font-mono);
+  font-size: 13px;
+  margin: 0;
+  min-height: 100vh;
+  line-height: 1.6;
+  letter-spacing: -0.01em;
+}
+
+/* Override Tailwind's font-mono to use our mono stack */
+.font-mono {
+  font-family: var(--font-mono) !important;
+}
+
+/* Code-style text */
+code, kbd, pre {
+  font-family: var(--font-mono);
+}
+
+/* Card styles */
+.card {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.15s ease;
+}
+
+.card:hover {
+  border-color: hsl(var(--border-hover));
+  box-shadow: var(--shadow);
+}
+
+/* Terminal-style cursor blink */
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+.cursor-blink::after {
+  content: '_';
+  animation: blink 1s step-end infinite;
+}
+
+/* Glow effects for dark mode */
+.dark .glow-success {
+  box-shadow: 0 0 20px -5px hsl(var(--success) / 0.25);
+}
+
+.dark .glow-info {
+  box-shadow: 0 0 20px -5px hsl(var(--info) / 0.25);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.2);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.4);
+}
+
+/* Animations */
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  animation: marquee 40s linear infinite;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}
+
+/* Focus styles */
+*:focus-visible {
+  outline: 1px solid hsl(var(--ring));
+  outline-offset: 1px;
+}
+
+/* Selection */
+::selection {
+  background: hsl(var(--foreground) / 0.15);
+}
+
+/* Tabular numbers for data */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Terminal-like input style */
+input, textarea {
+  font-family: var(--font-mono);
+}
+
+/* Button base styles */
+button {
+  font-family: var(--font-mono);
+  letter-spacing: -0.01em;
+}
+
+/* Subtle text dimming for secondary content */
+.text-dim {
+  opacity: 0.7;
+}
