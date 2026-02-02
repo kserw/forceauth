@@ -179,7 +179,20 @@ export async function getLoginsBySource(options: SalesforceApiOptions, days = 30
 }
 
 // Get failed logins
-export async function getFailedLogins(options: SalesforceApiOptions, days = 7, limit = 100) {
+interface LoginHistoryRecord {
+  Id: string;
+  UserId: string;
+  LoginTime: string;
+  SourceIp: string;
+  LoginType: string;
+  Status: string;
+  Application: string | null;
+  Browser: string | null;
+  Platform: string | null;
+  CountryIso: string | null;
+}
+
+export async function getFailedLogins(options: SalesforceApiOptions, days = 7, limit = 100): Promise<LoginHistoryRecord[]> {
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);
   const startDateStr = startDate.toISOString().split('T')[0];
@@ -193,7 +206,7 @@ export async function getFailedLogins(options: SalesforceApiOptions, days = 7, l
     ORDER BY LoginTime DESC
     LIMIT ${limit * 3}
   `;
-  const results = await salesforceQuery<{ Status: string }>(options, soql);
+  const results = await salesforceQuery<LoginHistoryRecord>(options, soql);
   // Filter to only failed logins
   return results.filter(r => r.Status !== 'Success').slice(0, limit);
 }
