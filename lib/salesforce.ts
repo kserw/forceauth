@@ -184,15 +184,18 @@ export async function getFailedLogins(options: SalesforceApiOptions, days = 7, l
   startDate.setDate(startDate.getDate() - days);
   const startDateStr = startDate.toISOString().split('T')[0];
 
+  // Note: Status field is not filterable in SOQL, so we fetch all and filter in code
   const soql = `
     SELECT Id, UserId, LoginTime, SourceIp, LoginType, Status,
            Application, Browser, Platform, CountryIso
     FROM LoginHistory
-    WHERE LoginTime >= ${startDateStr}T00:00:00Z AND Status != 'Success'
+    WHERE LoginTime >= ${startDateStr}T00:00:00Z
     ORDER BY LoginTime DESC
-    LIMIT ${limit}
+    LIMIT ${limit * 3}
   `;
-  return salesforceQuery(options, soql);
+  const results = await salesforceQuery<{ Status: string }>(options, soql);
+  // Filter to only failed logins
+  return results.filter(r => r.Status !== 'Success').slice(0, limit);
 }
 
 // Get logins by type
