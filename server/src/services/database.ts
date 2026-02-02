@@ -1,138 +1,109 @@
-import Database, { type Database as DatabaseType } from 'better-sqlite3';
-import path from 'path';
-import { fileURLToPath } from 'url';
+// Database abstraction layer - supports both SQLite (dev) and PostgreSQL (prod)
+// This module provides a unified interface for database operations
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_PATH = process.env.DB_PATH || path.join(__dirname, '../../data/forceauth.db');
+const DATABASE_URL = process.env.DATABASE_URL || '';
+const USE_POSTGRES = DATABASE_URL.startsWith('postgresql://') || DATABASE_URL.startsWith('postgres://');
 
-// Ensure data directory exists
-import fs from 'fs';
-const dataDir = path.dirname(DB_PATH);
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
+// Dynamic imports based on database type
+let dbModule: {
+  query: (text: string, params?: unknown[]) => Promise<{ rows: unknown[]; rowCount: number | null }>;
+  initializeDatabase: () => void | Promise<void>;
+  cleanupExpiredOAuthStates: () => Promise<number>;
+  cleanupExpiredSessions: (maxAgeMs?: number) => Promise<number>;
+  cleanupOldRateLimits: () => Promise<number>;
+  healthCheck: () => Promise<boolean>;
+  pool?: unknown;
+  db?: unknown;
+};
+
+// Initialize database on module load
+let initialized = false;
+let initPromise: Promise<void> | null = null;
+
+async function loadDatabaseModule() {
+  if (USE_POSTGRES) {
+    console.log('[Database] Using PostgreSQL backend');
+    const pg = await import('./postgres.js');
+    dbModule = {
+      query: pg.query,
+      initializeDatabase: pg.initializeDatabase,
+      cleanupExpiredOAuthStates: pg.cleanupExpiredOAuthStates,
+      cleanupExpiredSessions: pg.cleanupExpiredSessions,
+      cleanupOldRateLimits: pg.cleanupOldRateLimits,
+      healthCheck: pg.healthCheck,
+      pool: pg.pool,
+    };
+  } else {
+    console.log('[Database] Using SQLite backend (development mode)');
+    const sqlite = await import('./sqlite.js');
+    dbModule = {
+      query: sqlite.query,
+      initializeDatabase: sqlite.initializeDatabase,
+      cleanupExpiredOAuthStates: sqlite.cleanupExpiredOAuthStates,
+      cleanupExpiredSessions: sqlite.cleanupExpiredSessions,
+      cleanupOldRateLimits: sqlite.cleanupOldRateLimits,
+      healthCheck: sqlite.healthCheck,
+      db: sqlite.db,
+    };
+  }
 }
 
-const db: DatabaseType = new Database(DB_PATH);
-db.pragma('journal_mode = WAL');
+export async function ensureInitialized(): Promise<void> {
+  if (initialized) return;
 
-// Initialize schema
-db.exec(`
-  -- Users table: tracks users by their Salesforce identity
-  CREATE TABLE IF NOT EXISTS users (
-    id TEXT PRIMARY KEY,
-    salesforce_user_id TEXT UNIQUE NOT NULL,
-    email TEXT,
-    name TEXT,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    last_login_at TEXT
-  );
+  if (!initPromise) {
+    initPromise = (async () => {
+      await loadDatabaseModule();
+      await dbModule.initializeDatabase();
+      initialized = true;
+    })();
+  }
 
-  -- Org credentials: Connected App configurations
-  CREATE TABLE IF NOT EXISTS org_credentials (
-    id TEXT PRIMARY KEY,
-    org_id TEXT,
-    org_name TEXT NOT NULL,
-    environment TEXT NOT NULL CHECK(environment IN ('production', 'sandbox')),
-    client_id TEXT NOT NULL,
-    client_secret_encrypted TEXT NOT NULL,
-    redirect_uri TEXT NOT NULL,
-    created_by_user_id TEXT NOT NULL,
-    shared INTEGER DEFAULT 0,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (created_by_user_id) REFERENCES users(id)
-  );
-
-  -- Sessions table: persistent sessions
-  CREATE TABLE IF NOT EXISTS sessions (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    org_credentials_id TEXT,
-    access_token_encrypted TEXT NOT NULL,
-    refresh_token_encrypted TEXT,
-    instance_url TEXT,
-    environment TEXT,
-    issued_at INTEGER,
-    expires_at INTEGER,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (org_credentials_id) REFERENCES org_credentials(id)
-  );
-
-  -- Tracked integrations: user-owned integration tracking
-  CREATE TABLE IF NOT EXISTS tracked_integrations (
-    id TEXT PRIMARY KEY,
-    app_name TEXT NOT NULL,
-    contact TEXT DEFAULT '',
-    contact_id TEXT,
-    sf_username TEXT DEFAULT '',
-    sf_user_id TEXT,
-    profile TEXT DEFAULT '',
-    in_retool INTEGER DEFAULT 0,
-    has_ip_ranges INTEGER DEFAULT 0,
-    notes TEXT DEFAULT '',
-    ip_ranges TEXT DEFAULT '[]',
-    status TEXT DEFAULT 'pending' CHECK(status IN ('done', 'in_progress', 'pending', 'blocked')),
-    created_by_user_id TEXT NOT NULL,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (created_by_user_id) REFERENCES users(id)
-  );
-
-  -- Integration shares: explicit per-user sharing
-  CREATE TABLE IF NOT EXISTS integration_shares (
-    id TEXT PRIMARY KEY,
-    integration_id TEXT NOT NULL,
-    shared_with_user_id TEXT NOT NULL,
-    permission TEXT DEFAULT 'view' CHECK(permission IN ('view', 'edit')),
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (integration_id) REFERENCES tracked_integrations(id) ON DELETE CASCADE,
-    FOREIGN KEY (shared_with_user_id) REFERENCES users(id),
-    UNIQUE(integration_id, shared_with_user_id)
-  );
-
-  -- Indexes for performance
-  CREATE INDEX IF NOT EXISTS idx_org_credentials_client_id ON org_credentials(client_id);
-  CREATE INDEX IF NOT EXISTS idx_org_credentials_created_by ON org_credentials(created_by_user_id);
-  CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
-  CREATE INDEX IF NOT EXISTS idx_tracked_integrations_created_by ON tracked_integrations(created_by_user_id);
-  CREATE INDEX IF NOT EXISTS idx_integration_shares_integration_id ON integration_shares(integration_id);
-  CREATE INDEX IF NOT EXISTS idx_integration_shares_shared_with ON integration_shares(shared_with_user_id);
-
-  -- System users for pre-login registration flow
-  INSERT OR IGNORE INTO users (id, salesforce_user_id, email, name) VALUES ('pending', 'pending', NULL, 'Pending User');
-  INSERT OR IGNORE INTO users (id, salesforce_user_id, email, name) VALUES ('system', 'system', NULL, 'System User');
-`);
-
-// Migration: Add sf_org_id and sf_org_name columns to sessions if they don't exist
-try {
-  db.exec(`ALTER TABLE sessions ADD COLUMN sf_org_id TEXT`);
-} catch {
-  // Column already exists
-}
-try {
-  db.exec(`ALTER TABLE sessions ADD COLUMN sf_org_name TEXT`);
-} catch {
-  // Column already exists
+  await initPromise;
 }
 
-// TESTING: Wipe all orgs and sessions on restart (development only)
-if (process.env.NODE_ENV !== 'production' && process.env.WIPE_DB_ON_START === 'true') {
-  console.log('[DB] Wiping all orgs and sessions for testing...');
-  db.exec(`DELETE FROM sessions`);
-  db.exec(`DELETE FROM org_credentials`);
-  console.log('[DB] Orgs and sessions wiped');
+// Export query function that ensures initialization
+export async function query<T = Record<string, unknown>>(
+  text: string,
+  params?: unknown[]
+): Promise<{ rows: T[]; rowCount: number }> {
+  await ensureInitialized();
+  const result = await dbModule.query(text, params);
+  return {
+    rows: result.rows as T[],
+    rowCount: result.rowCount ?? 0,
+  };
 }
 
-export default db;
+// Export cleanup functions
+export async function cleanupExpiredOAuthStates(): Promise<number> {
+  await ensureInitialized();
+  return dbModule.cleanupExpiredOAuthStates();
+}
 
-// Helper types
+export async function cleanupExpiredSessions(maxAgeMs?: number): Promise<number> {
+  await ensureInitialized();
+  return dbModule.cleanupExpiredSessions(maxAgeMs);
+}
+
+export async function cleanupOldRateLimits(): Promise<number> {
+  await ensureInitialized();
+  return dbModule.cleanupOldRateLimits();
+}
+
+export async function healthCheck(): Promise<boolean> {
+  await ensureInitialized();
+  return dbModule.healthCheck();
+}
+
+// Helper types matching the database schema
 export interface DbUser {
   id: string;
   salesforce_user_id: string;
   email: string | null;
   name: string | null;
-  created_at: string;
-  last_login_at: string | null;
+  created_at: Date | string;
+  last_login_at: Date | string | null;
 }
 
 export interface DbOrgCredentials {
@@ -144,8 +115,8 @@ export interface DbOrgCredentials {
   client_secret_encrypted: string;
   redirect_uri: string;
   created_by_user_id: string;
-  shared: number;
-  created_at: string;
+  shared: boolean | number;
+  created_at: Date | string;
 }
 
 export interface DbSession {
@@ -157,10 +128,14 @@ export interface DbSession {
   instance_url: string | null;
   environment: string | null;
   issued_at: number | null;
-  expires_at: number | null;
   sf_org_id: string | null;
   sf_org_name: string | null;
-  created_at: string;
+  ip_address: string | null;
+  user_agent: string | null;
+  csrf_token: string | null;
+  last_activity_at: Date | string;
+  state: 'active' | 'expired' | 'revoked';
+  created_at: Date | string;
 }
 
 export interface DbTrackedIntegration {
@@ -171,14 +146,14 @@ export interface DbTrackedIntegration {
   sf_username: string;
   sf_user_id: string | null;
   profile: string;
-  in_retool: number;
-  has_ip_ranges: number;
+  in_retool: boolean | number;
+  has_ip_ranges: boolean | number;
   notes: string;
-  ip_ranges: string; // JSON string array
+  ip_ranges: string[] | string;
   status: 'done' | 'in_progress' | 'pending' | 'blocked';
   created_by_user_id: string;
-  created_at: string;
-  updated_at: string;
+  created_at: Date | string;
+  updated_at: Date | string;
 }
 
 export interface DbIntegrationShare {
@@ -186,5 +161,48 @@ export interface DbIntegrationShare {
   integration_id: string;
   shared_with_user_id: string;
   permission: 'view' | 'edit';
-  created_at: string;
+  created_at: Date | string;
 }
+
+export interface DbOAuthState {
+  state: string;
+  environment: 'production' | 'sandbox';
+  return_url: string;
+  nonce: string;
+  hmac_signature: string;
+  popup: boolean | number;
+  org_credentials_id: string | null;
+  ip_address: string | null;
+  user_agent: string | null;
+  created_at: Date | string;
+  expires_at: Date | string;
+}
+
+export interface DbAuditLog {
+  id: number;
+  user_id: string | null;
+  session_id: string | null;
+  action: string;
+  resource_type: string | null;
+  resource_id: string | null;
+  details: Record<string, unknown> | string | null;
+  ip_address: string | null;
+  user_agent: string | null;
+  success: boolean | number;
+  error_message: string | null;
+  created_at: Date | string;
+}
+
+export interface DbRateLimit {
+  id: number;
+  identifier: string;
+  endpoint: string;
+  window_start: Date | string;
+  request_count: number;
+}
+
+// Default export for backward compatibility
+export default {
+  query,
+  ensureInitialized,
+};

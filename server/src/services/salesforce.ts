@@ -1,9 +1,7 @@
-import { config } from '../config/index.js';
+import { config, isValidReturnUrl } from '../config/index.js';
 import type { SalesforceEnvironment, SalesforceTokens, SalesforceUserInfo, OAuthState, OrgCredentials } from '../types/index.js';
 import { getOrgCredentials, getDecryptedClientSecret, updateOrgId } from './credentialsStore.js';
-import crypto from 'crypto';
-
-const pendingStates = new Map<string, OAuthState>();
+import { createOAuthState, validateAndConsumeOAuthState } from './oauthStateStore.js';
 
 // Get auth URL base based on environment
 function getAuthUrlBase(environment: SalesforceEnvironment): string {
@@ -13,9 +11,9 @@ function getAuthUrlBase(environment: SalesforceEnvironment): string {
 }
 
 // Get credentials - either from registered org or fallback to env config
-function getCredentials(orgCredentialsId?: string, environment: SalesforceEnvironment = 'production') {
+async function getCredentials(orgCredentialsId?: string, environment: SalesforceEnvironment = 'production') {
   if (orgCredentialsId) {
-    const orgCreds = getOrgCredentials(orgCredentialsId);
+    const orgCreds = await getOrgCredentials(orgCredentialsId);
     if (!orgCreds) {
       throw new Error('Org credentials not found');
     }
@@ -53,30 +51,41 @@ export interface GenerateAuthUrlOptions {
   returnUrl?: string;
   popup?: boolean;
   orgCredentialsId?: string;
+  ipAddress?: string;
+  userAgent?: string;
 }
 
-export function generateAuthUrl(options: GenerateAuthUrlOptions = {}): string {
+export async function generateAuthUrl(options: GenerateAuthUrlOptions = {}): Promise<string> {
   const {
     environment = 'production',
     returnUrl = '/',
     popup = false,
     orgCredentialsId,
+    ipAddress,
+    userAgent,
   } = options;
 
-  const creds = getCredentials(orgCredentialsId, environment);
-  const nonce = crypto.randomBytes(16).toString('hex');
-  const state = crypto.randomBytes(16).toString('hex');
+  const creds = await getCredentials(orgCredentialsId, environment);
 
-  pendingStates.set(state, {
+  // Validate return URL against whitelist
+  const validReturnUrl = isValidReturnUrl(returnUrl) ? returnUrl : '/';
+
+  // Create persistent OAuth state
+  const state = await createOAuthState({
     environment: creds.environment,
-    returnUrl,
-    nonce,
+    returnUrl: validReturnUrl,
     popup,
     orgCredentialsId: creds.orgCredentialsId,
+    ipAddress,
+    userAgent,
   });
 
-  // Clean up old states after 10 minutes
-  setTimeout(() => pendingStates.delete(state), 10 * 60 * 1000);
+  console.log('[generateAuthUrl] Created OAuth state:', {
+    statePrefix: state.substring(0, 8) + '...',
+    environment: creds.environment,
+    orgCredentialsId: creds.orgCredentialsId,
+    redirectUri: creds.redirectUri,
+  });
 
   const params = new URLSearchParams({
     response_type: 'code',
@@ -89,20 +98,15 @@ export function generateAuthUrl(options: GenerateAuthUrlOptions = {}): string {
   return `${creds.authUrl}/services/oauth2/authorize?${params.toString()}`;
 }
 
-export function validateAndConsumeState(state: string): OAuthState | null {
-  const stateData = pendingStates.get(state);
-  if (stateData) {
-    pendingStates.delete(state);
-    return stateData;
-  }
-  return null;
+export async function validateAndConsumeState(state: string, ipAddress?: string): Promise<OAuthState | null> {
+  return validateAndConsumeOAuthState(state, ipAddress);
 }
 
 export async function exchangeCodeForTokens(
   code: string,
   stateData: OAuthState
 ): Promise<SalesforceTokens> {
-  const creds = getCredentials(stateData.orgCredentialsId, stateData.environment);
+  const creds = await getCredentials(stateData.orgCredentialsId, stateData.environment);
 
   const params = new URLSearchParams({
     grant_type: 'authorization_code',
@@ -110,6 +114,13 @@ export async function exchangeCodeForTokens(
     client_id: creds.clientId,
     client_secret: creds.clientSecret,
     redirect_uri: creds.redirectUri,
+  });
+
+  console.log('[exchangeCodeForTokens] Exchanging code for tokens:', {
+    authUrl: creds.authUrl,
+    redirectUri: creds.redirectUri,
+    clientIdPrefix: creds.clientId?.substring(0, 10) + '...',
+    orgCredentialsId: stateData.orgCredentialsId,
   });
 
   const response = await fetch(`${creds.authUrl}/services/oauth2/token`, {
@@ -122,6 +133,11 @@ export async function exchangeCodeForTokens(
 
   if (!response.ok) {
     const error = await response.text();
+    console.error('[exchangeCodeForTokens] Token exchange failed:', {
+      status: response.status,
+      error,
+      redirectUri: creds.redirectUri,
+    });
     throw new Error(`Token exchange failed: ${error}`);
   }
 
@@ -140,7 +156,7 @@ export async function refreshAccessToken(
   environment: SalesforceEnvironment,
   orgCredentialsId?: string
 ): Promise<{ accessToken: string; refreshToken?: string }> {
-  const creds = getCredentials(orgCredentialsId, environment);
+  const creds = await getCredentials(orgCredentialsId, environment);
 
   const params = new URLSearchParams({
     grant_type: 'refresh_token',
@@ -200,8 +216,8 @@ export async function getUserInfo(
 }
 
 // Update the org credentials with the actual Salesforce Org ID after successful auth
-export function linkOrgIdToCredentials(orgCredentialsId: string, salesforceOrgId: string): void {
-  updateOrgId(orgCredentialsId, salesforceOrgId);
+export async function linkOrgIdToCredentials(orgCredentialsId: string, salesforceOrgId: string): Promise<void> {
+  await updateOrgId(orgCredentialsId, salesforceOrgId);
 }
 
 export async function revokeToken(

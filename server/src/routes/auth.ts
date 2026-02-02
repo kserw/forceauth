@@ -17,20 +17,37 @@ import {
   deleteSession,
   updateSessionTokens,
   getSessionUserId,
+  rotateSession,
 } from '../services/tokenStore.js';
 import { findOrCreateUser, getUserById } from '../services/userStore.js';
 import { claimOrgCredentials, claimAllPendingOrgCredentials } from '../services/credentialsStore.js';
+import { authRateLimiter } from '../middleware/rateLimiter.js';
+import { logLoginSuccess, logLoginFailed, logLogout } from '../services/auditLog.js';
+import { getCsrfTokenForSession } from '../middleware/csrf.js';
 import type { SalesforceEnvironment } from '../types/index.js';
 
 const router = Router();
 
 const COOKIE_NAME = 'forceauth_session';
+const isProduction = process.env.NODE_ENV === 'production';
+
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
+  secure: isProduction,
   sameSite: 'lax' as const,
-  maxAge: 24 * 60 * 60 * 1000, // 24 hours
+  maxAge: config.session.maxAge,
+  path: '/api',
 };
+
+// Helper to get client info from request
+function getClientInfo(req: Request): { ipAddress: string; userAgent: string } {
+  const forwarded = req.headers['x-forwarded-for'];
+  const ipAddress = forwarded
+    ? (typeof forwarded === 'string' ? forwarded : forwarded[0]).split(',')[0].trim()
+    : req.ip || req.socket.remoteAddress || 'unknown';
+  const userAgent = req.headers['user-agent'] || 'unknown';
+  return { ipAddress, userAgent };
+}
 
 // Helper to generate popup callback HTML
 function generatePopupCallbackHtml(success: boolean, error?: string): string {
@@ -200,12 +217,13 @@ function generatePopupCallbackHtml(success: boolean, error?: string): string {
 </html>`;
 }
 
-// GET /api/auth/login - Initiate OAuth flow
-router.get('/login', (req: Request, res: Response) => {
+// GET /api/auth/login - Initiate OAuth flow (rate limited)
+router.get('/login', authRateLimiter, async (req: Request, res: Response) => {
   const environment = (req.query.env as SalesforceEnvironment) || 'production';
   const returnUrl = (req.query.returnUrl as string) || '/';
   const popup = req.query.popup === 'true';
-  const orgId = req.query.orgId as string | undefined; // Optional: use specific org's credentials
+  const orgId = req.query.orgId as string | undefined;
+  const { ipAddress, userAgent } = getClientInfo(req);
 
   if (environment !== 'production' && environment !== 'sandbox') {
     res.status(400).json({ error: 'Invalid environment. Must be "production" or "sandbox".' });
@@ -213,15 +231,18 @@ router.get('/login', (req: Request, res: Response) => {
   }
 
   try {
-    const authUrl = generateAuthUrl({
+    const authUrl = await generateAuthUrl({
       environment,
       returnUrl,
       popup,
       orgCredentialsId: orgId,
+      ipAddress,
+      userAgent,
     });
     res.redirect(authUrl);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Configuration error';
+    await logLoginFailed(ipAddress, userAgent, { error: message, environment });
     if (popup) {
       res.send(generatePopupCallbackHtml(false, message));
     } else {
@@ -233,21 +254,25 @@ router.get('/login', (req: Request, res: Response) => {
 // GET /api/auth/callback - OAuth callback
 router.get('/callback', async (req: Request, res: Response) => {
   const { code, state, error, error_description } = req.query;
+  const { ipAddress, userAgent } = getClientInfo(req);
 
   if (error) {
     console.error('OAuth error:', error, error_description);
     const errorMsg = String(error_description || error);
+    await logLoginFailed(ipAddress, userAgent, { error: errorMsg });
     res.redirect(`${config.frontendUrl}?error=${encodeURIComponent(errorMsg)}`);
     return;
   }
 
   if (!code || !state) {
+    await logLoginFailed(ipAddress, userAgent, { error: 'Missing code or state' });
     res.redirect(`${config.frontendUrl}?error=${encodeURIComponent('Missing code or state')}`);
     return;
   }
 
-  const stateData = validateAndConsumeState(String(state));
+  const stateData = await validateAndConsumeState(String(state), ipAddress);
   if (!stateData) {
+    await logLoginFailed(ipAddress, userAgent, { error: 'Invalid or expired state' });
     res.redirect(`${config.frontendUrl}?error=${encodeURIComponent('Invalid or expired state')}`);
     return;
   }
@@ -270,30 +295,36 @@ router.get('/callback', async (req: Request, res: Response) => {
 
     // If using org credentials, link the Salesforce Org ID
     if (stateData.orgCredentialsId) {
-      linkOrgIdToCredentials(stateData.orgCredentialsId, userInfo.organizationId);
+      await linkOrgIdToCredentials(stateData.orgCredentialsId, userInfo.organizationId);
     }
 
     // Find or create user based on Salesforce identity
-    const user = findOrCreateUser(userInfo.id, userInfo.email, userInfo.displayName);
+    const user = await findOrCreateUser(userInfo.id, userInfo.email, userInfo.displayName);
 
     // Claim the org credentials if they were pending (pre-login registration)
     if (stateData.orgCredentialsId) {
-      claimOrgCredentials(stateData.orgCredentialsId, user.id);
+      await claimOrgCredentials(stateData.orgCredentialsId, user.id);
     }
 
     // Also claim any other pending org credentials this user may have created before login
-    const claimedCount = claimAllPendingOrgCredentials(user.id);
+    const claimedCount = await claimAllPendingOrgCredentials(user.id);
     if (claimedCount > 0) {
       console.log(`[auth/callback] Claimed ${claimedCount} pending org credentials for user ${user.id}`);
     }
 
     const sessionId = generateSessionId();
-    setSession(sessionId, {
+    const csrfToken = await setSession(sessionId, {
       userId: user.id,
       orgCredentialsId: stateData.orgCredentialsId,
       tokens,
       userInfo,
       environment: stateData.environment,
+    }, ipAddress, userAgent);
+
+    // Log successful login
+    await logLoginSuccess(user.id, sessionId, ipAddress, userAgent, {
+      environment: stateData.environment,
+      orgCredentialsId: stateData.orgCredentialsId,
     });
 
     res.cookie(COOKIE_NAME, sessionId, COOKIE_OPTIONS);
@@ -306,6 +337,7 @@ router.get('/callback', async (req: Request, res: Response) => {
   } catch (err) {
     console.error('OAuth callback error:', err);
     const message = err instanceof Error ? err.message : 'Authentication failed';
+    await logLoginFailed(ipAddress, userAgent, { error: message });
 
     if (stateData.popup) {
       res.send(generatePopupCallbackHtml(false, message));
@@ -324,14 +356,14 @@ router.get('/status', async (req: Request, res: Response) => {
     return;
   }
 
-  const session = getSession(sessionId);
+  const session = await getSession(sessionId);
   if (!session) {
-    res.clearCookie(COOKIE_NAME);
+    res.clearCookie(COOKIE_NAME, { path: '/api' });
     res.json({ authenticated: false });
     return;
   }
 
-  // Check if token might be expired (issued more than 1 hour ago)
+  // Check if token might be expired (issued more than 55 minutes ago)
   const tokenAge = Date.now() - session.tokens.issuedAt;
   if (tokenAge > 55 * 60 * 1000) {
     try {
@@ -339,20 +371,18 @@ router.get('/status', async (req: Request, res: Response) => {
         session.tokens.refreshToken,
         session.environment
       );
-      updateSessionTokens(sessionId, newTokens.accessToken, newTokens.refreshToken);
+      await updateSessionTokens(sessionId, newTokens.accessToken, newTokens.refreshToken);
     } catch (err) {
       console.error('Token refresh failed:', err);
-      deleteSession(sessionId);
-      res.clearCookie(COOKIE_NAME);
+      await deleteSession(sessionId);
+      res.clearCookie(COOKIE_NAME, { path: '/api' });
       res.json({ authenticated: false });
       return;
     }
   }
 
   // Fetch user info from users table
-  const dbUser = getUserById(session.userId);
-
-  console.log('[auth/status] session.userInfo:', JSON.stringify(session.userInfo, null, 2));
+  const dbUser = await getUserById(session.userId);
 
   const userInfo = dbUser ? {
     id: dbUser.salesforceUserId,
@@ -363,7 +393,8 @@ router.get('/status', async (req: Request, res: Response) => {
     orgName: session.userInfo.orgName,
   } : session.userInfo;
 
-  console.log('[auth/status] Returning userInfo:', JSON.stringify(userInfo, null, 2));
+  // Include CSRF token in response
+  const csrfToken = await getCsrfTokenForSession(sessionId);
 
   res.json({
     authenticated: true,
@@ -372,41 +403,45 @@ router.get('/status', async (req: Request, res: Response) => {
     environment: session.environment,
     instanceUrl: session.tokens.instanceUrl,
     orgCredentialsId: session.orgCredentialsId || null,
+    csrfToken,
   });
 });
 
 // POST /api/auth/logout - Log out
 router.post('/logout', async (req: Request, res: Response) => {
   const sessionId = req.cookies[COOKIE_NAME];
+  const { ipAddress, userAgent } = getClientInfo(req);
 
   if (sessionId) {
-    const session = getSession(sessionId);
+    const session = await getSession(sessionId);
     if (session) {
       try {
         await revokeToken(session.tokens.accessToken, session.environment);
       } catch (err) {
         console.error('Token revocation failed:', err);
       }
-      deleteSession(sessionId);
+      await logLogout(session.userId, sessionId, ipAddress, userAgent);
+      await deleteSession(sessionId);
     }
   }
 
-  res.clearCookie(COOKIE_NAME);
+  res.clearCookie(COOKIE_NAME, { path: '/api' });
   res.json({ success: true });
 });
 
 // POST /api/auth/refresh - Manually refresh token
 router.post('/refresh', async (req: Request, res: Response) => {
   const sessionId = req.cookies[COOKIE_NAME];
+  const { ipAddress, userAgent } = getClientInfo(req);
 
   if (!sessionId) {
     res.status(401).json({ error: 'Not authenticated' });
     return;
   }
 
-  const session = getSession(sessionId);
+  const session = await getSession(sessionId);
   if (!session) {
-    res.clearCookie(COOKIE_NAME);
+    res.clearCookie(COOKIE_NAME, { path: '/api' });
     res.status(401).json({ error: 'Session not found' });
     return;
   }
@@ -416,12 +451,20 @@ router.post('/refresh', async (req: Request, res: Response) => {
       session.tokens.refreshToken,
       session.environment
     );
-    updateSessionTokens(sessionId, newTokens.accessToken, newTokens.refreshToken);
-    res.json({ success: true });
+    await updateSessionTokens(sessionId, newTokens.accessToken, newTokens.refreshToken);
+
+    // Optionally rotate session on token refresh for extra security
+    const rotated = await rotateSession(sessionId, ipAddress, userAgent);
+    if (rotated) {
+      res.cookie(COOKIE_NAME, rotated.newSessionId, COOKIE_OPTIONS);
+      res.json({ success: true, csrfToken: rotated.csrfToken });
+    } else {
+      res.json({ success: true });
+    }
   } catch (err) {
     console.error('Token refresh failed:', err);
-    deleteSession(sessionId);
-    res.clearCookie(COOKIE_NAME);
+    await deleteSession(sessionId);
+    res.clearCookie(COOKIE_NAME, { path: '/api' });
     res.status(401).json({ error: 'Token refresh failed' });
   }
 });

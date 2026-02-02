@@ -2141,15 +2141,31 @@ export async function getDataAuditEvents(session: SessionData, limit = 50): Prom
     SELECT Id, Action, Section, CreatedDate, CreatedBy.Name, Display, DelegateUser
     FROM SetupAuditTrail
     ORDER BY CreatedDate DESC
-    LIMIT 200
+    LIMIT 500
   `;
   try {
     const result = await soqlQuery<DataAuditEvent>(session, query);
-    // Filter for data-related sections in JavaScript
+    // Filter for security and data-related sections in JavaScript
     const dataRelatedSections = [
-      'Sharing Rules', 'Field Level Security', 'Data Export',
-      'Data Management', 'Record Type', 'Custom Object',
-      'Sharing Settings', 'Permission Sets'
+      // Data access and sharing
+      'Sharing Rules', 'Sharing Settings', 'Field Level Security',
+      'Data Export', 'Data Management', 'Record Type',
+      // Objects and schema
+      'Custom Object', 'Custom Field', 'Validation Rules',
+      'Page Layouts', 'Workflow Rules', 'Process Builder',
+      // Security and permissions
+      'Permission Sets', 'Profiles', 'Roles', 'Groups',
+      'Login Access Policies', 'Password Policies', 'Session Settings',
+      'Certificate and Key Management', 'Identity Provider',
+      // Users and authentication
+      'Users', 'Manage Users', 'Login History',
+      'Connected Apps', 'Auth. Providers', 'Named Credentials',
+      // API and integrations
+      'Remote Site Settings', 'API', 'Apex Class',
+      'Apex Trigger', 'Visualforce', 'Lightning',
+      // Other security-relevant
+      'Email Administration', 'Delegated Administration',
+      'Company Information', 'Organization', 'Security Controls'
     ];
     const filtered = result.records.filter(r => dataRelatedSections.includes(r.Section));
     return filtered.slice(0, limit);

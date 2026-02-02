@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import db, { type DbUser } from './database.js';
+import { query, type DbUser } from './database.js';
 
 export interface User {
   id: string;
@@ -26,21 +26,24 @@ export function generateUserId(): string {
 }
 
 // Find or create a user based on their Salesforce identity
-export function findOrCreateUser(salesforceUserId: string, email?: string, name?: string): User {
+export async function findOrCreateUser(salesforceUserId: string, email?: string, name?: string): Promise<User> {
   // Try to find existing user
-  const findStmt = db.prepare('SELECT * FROM users WHERE salesforce_user_id = ?');
-  const existing = findStmt.get(salesforceUserId) as DbUser | undefined;
+  const findResult = await query<DbUser>(
+    'SELECT * FROM users WHERE salesforce_user_id = $1',
+    [salesforceUserId]
+  );
+  const existing = findResult.rows[0];
 
   if (existing) {
     // Update last login and any new info
-    const updateStmt = db.prepare(`
-      UPDATE users SET
-        last_login_at = CURRENT_TIMESTAMP,
-        email = COALESCE(?, email),
-        name = COALESCE(?, name)
-      WHERE id = ?
-    `);
-    updateStmt.run(email || null, name || null, existing.id);
+    await query(
+      `UPDATE users SET
+         last_login_at = NOW(),
+         email = COALESCE($1, email),
+         name = COALESCE($2, name)
+       WHERE id = $3`,
+      [email || null, name || null, existing.id]
+    );
 
     return {
       ...dbRowToUser(existing),
@@ -52,11 +55,11 @@ export function findOrCreateUser(salesforceUserId: string, email?: string, name?
 
   // Create new user
   const id = generateUserId();
-  const insertStmt = db.prepare(`
-    INSERT INTO users (id, salesforce_user_id, email, name, last_login_at)
-    VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-  `);
-  insertStmt.run(id, salesforceUserId, email || null, name || null);
+  await query(
+    `INSERT INTO users (id, salesforce_user_id, email, name, last_login_at)
+     VALUES ($1, $2, $3, $4, NOW())`,
+    [id, salesforceUserId, email || null, name || null]
+  );
 
   return {
     id,
@@ -68,14 +71,41 @@ export function findOrCreateUser(salesforceUserId: string, email?: string, name?
   };
 }
 
-export function getUserById(id: string): User | undefined {
-  const stmt = db.prepare('SELECT * FROM users WHERE id = ?');
-  const row = stmt.get(id) as DbUser | undefined;
+export async function getUserById(id: string): Promise<User | undefined> {
+  const result = await query<DbUser>(
+    'SELECT * FROM users WHERE id = $1',
+    [id]
+  );
+  const row = result.rows[0];
   return row ? dbRowToUser(row) : undefined;
 }
 
-export function getUserBySalesforceId(salesforceUserId: string): User | undefined {
-  const stmt = db.prepare('SELECT * FROM users WHERE salesforce_user_id = ?');
-  const row = stmt.get(salesforceUserId) as DbUser | undefined;
+export async function getUserBySalesforceId(salesforceUserId: string): Promise<User | undefined> {
+  const result = await query<DbUser>(
+    'SELECT * FROM users WHERE salesforce_user_id = $1',
+    [salesforceUserId]
+  );
+  const row = result.rows[0];
   return row ? dbRowToUser(row) : undefined;
+}
+
+export async function updateUser(id: string, updates: { email?: string; name?: string }): Promise<User | undefined> {
+  const result = await query<DbUser>(
+    `UPDATE users SET
+       email = COALESCE($1, email),
+       name = COALESCE($2, name)
+     WHERE id = $3
+     RETURNING *`,
+    [updates.email || null, updates.name || null, id]
+  );
+  const row = result.rows[0];
+  return row ? dbRowToUser(row) : undefined;
+}
+
+export async function listUsers(limit: number = 100): Promise<User[]> {
+  const result = await query<DbUser>(
+    'SELECT * FROM users WHERE id NOT IN ($1, $2) ORDER BY last_login_at DESC NULLS LAST LIMIT $3',
+    ['pending', 'system', limit]
+  );
+  return result.rows.map(dbRowToUser);
 }

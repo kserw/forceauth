@@ -1,5 +1,6 @@
 import { Router, type Request, type Response } from 'express';
 import { getSession } from '../services/tokenStore.js';
+import { apiRateLimiter } from '../middleware/rateLimiter.js';
 import {
   getUsers,
   getAllUsers,
@@ -35,35 +36,44 @@ import {
   getAuthProviders,
   getApiUsageData,
 } from '../services/salesforceApi.js';
+import type { ExtendedSessionData } from '../services/tokenStore.js';
 
 const router = Router();
 
 const COOKIE_NAME = 'forceauth_session';
 
+// Apply API rate limiting to all Salesforce routes
+router.use(apiRateLimiter);
+
 // Middleware to require authentication
-function requireAuth(req: Request, res: Response, next: () => void) {
+async function requireAuth(req: Request, res: Response, next: () => void) {
   const sessionId = req.cookies[COOKIE_NAME];
   if (!sessionId) {
     res.status(401).json({ error: 'Not authenticated' });
     return;
   }
 
-  const session = getSession(sessionId);
+  const session = await getSession(sessionId);
   if (!session) {
     res.status(401).json({ error: 'Session expired' });
     return;
   }
 
   // Attach session to request for use in handlers
-  (req as Request & { session: typeof session }).session = session;
+  (req as Request & { session: ExtendedSessionData }).session = session;
   next();
 }
 
 router.use(requireAuth);
 
+// Helper to get session from request
+function getReqSession(req: Request): ExtendedSessionData {
+  return (req as Request & { session: ExtendedSessionData }).session;
+}
+
 // GET /api/salesforce/stats - Dashboard summary statistics
 router.get('/stats', async (req: Request, res: Response) => {
-  const session = (req as Request & { session: ReturnType<typeof getSession> }).session!;
+  const session = getReqSession(req);
   try {
     const stats = await getDashboardStats(session);
     res.json(stats);
@@ -75,7 +85,7 @@ router.get('/stats', async (req: Request, res: Response) => {
 
 // GET /api/salesforce/users - List users
 router.get('/users', async (req: Request, res: Response) => {
-  const session = (req as Request & { session: ReturnType<typeof getSession> }).session!;
+  const session = getReqSession(req);
   const all = req.query.all === 'true';
   const limit = parseInt(req.query.limit as string) || 100;
 
@@ -108,7 +118,7 @@ router.get('/users', async (req: Request, res: Response) => {
 
 // GET /api/salesforce/logins - Recent login history
 router.get('/logins', async (req: Request, res: Response) => {
-  const session = (req as Request & { session: ReturnType<typeof getSession> }).session!;
+  const session = getReqSession(req);
   const limit = parseInt(req.query.limit as string) || 100;
   const userId = req.query.userId as string | undefined;
 
@@ -141,7 +151,7 @@ router.get('/logins', async (req: Request, res: Response) => {
 
 // GET /api/salesforce/logins/by-country - Login stats by country
 router.get('/logins/by-country', async (req: Request, res: Response) => {
-  const session = (req as Request & { session: ReturnType<typeof getSession> }).session!;
+  const session = getReqSession(req);
   const days = parseInt(req.query.days as string) || 30;
 
   try {
@@ -155,7 +165,7 @@ router.get('/logins/by-country', async (req: Request, res: Response) => {
 
 // GET /api/salesforce/logins/by-city - Login stats by city
 router.get('/logins/by-city', async (req: Request, res: Response) => {
-  const session = (req as Request & { session: ReturnType<typeof getSession> }).session!;
+  const session = getReqSession(req);
   const days = parseInt(req.query.days as string) || 30;
 
   try {
@@ -169,7 +179,7 @@ router.get('/logins/by-city', async (req: Request, res: Response) => {
 
 // GET /api/salesforce/logins/by-source - Login stats by application/source
 router.get('/logins/by-source', async (req: Request, res: Response) => {
-  const session = (req as Request & { session: ReturnType<typeof getSession> }).session!;
+  const session = getReqSession(req);
   const days = parseInt(req.query.days as string) || 30;
 
   try {
@@ -185,7 +195,7 @@ router.get('/logins/by-source', async (req: Request, res: Response) => {
 
 // GET /api/salesforce/audit - Setup audit trail
 router.get('/audit', async (req: Request, res: Response) => {
-  const session = (req as Request & { session: ReturnType<typeof getSession> }).session!;
+  const session = getReqSession(req);
   const limit = parseInt(req.query.limit as string) || 50;
 
   try {
@@ -208,7 +218,7 @@ router.get('/audit', async (req: Request, res: Response) => {
 
 // GET /api/salesforce/limits - Org limits
 router.get('/limits', async (req: Request, res: Response) => {
-  const session = (req as Request & { session: ReturnType<typeof getSession> }).session!;
+  const session = getReqSession(req);
   const all = req.query.all === 'true';
 
   try {
@@ -251,7 +261,7 @@ router.get('/limits', async (req: Request, res: Response) => {
 
 // GET /api/salesforce/sessions - Active sessions
 router.get('/sessions', async (req: Request, res: Response) => {
-  const session = (req as Request & { session: ReturnType<typeof getSession> }).session!;
+  const session = getReqSession(req);
   const limit = parseInt(req.query.limit as string) || 100;
 
   try {
@@ -280,7 +290,7 @@ router.get('/sessions', async (req: Request, res: Response) => {
 
 // GET /api/salesforce/organization - Org info
 router.get('/organization', async (req: Request, res: Response) => {
-  const session = (req as Request & { session: ReturnType<typeof getSession> }).session!;
+  const session = getReqSession(req);
 
   try {
     const org = await getOrganization(session);
@@ -309,7 +319,7 @@ router.get('/organization', async (req: Request, res: Response) => {
 
 // GET /api/salesforce/profiles - Profiles with user counts
 router.get('/profiles', async (req: Request, res: Response) => {
-  const session = (req as Request & { session: ReturnType<typeof getSession> }).session!;
+  const session = getReqSession(req);
 
   try {
     const profiles = await getProfiles(session);
@@ -330,7 +340,7 @@ router.get('/profiles', async (req: Request, res: Response) => {
 
 // GET /api/salesforce/jobs/scheduled - Scheduled jobs
 router.get('/jobs/scheduled', async (req: Request, res: Response) => {
-  const session = (req as Request & { session: ReturnType<typeof getSession> }).session!;
+  const session = getReqSession(req);
 
   try {
     const jobs = await getScheduledJobs(session);
@@ -355,7 +365,7 @@ router.get('/jobs/scheduled', async (req: Request, res: Response) => {
 
 // GET /api/salesforce/jobs/async - Recent async apex jobs
 router.get('/jobs/async', async (req: Request, res: Response) => {
-  const session = (req as Request & { session: ReturnType<typeof getSession> }).session!;
+  const session = getReqSession(req);
   const limit = parseInt(req.query.limit as string) || 50;
 
   try {
@@ -382,7 +392,7 @@ router.get('/jobs/async', async (req: Request, res: Response) => {
 
 // GET /api/salesforce/logins/failed - Failed login attempts
 router.get('/logins/failed', async (req: Request, res: Response) => {
-  const session = (req as Request & { session: ReturnType<typeof getSession> }).session!;
+  const session = getReqSession(req);
   const days = parseInt(req.query.days as string) || 7;
   const limit = parseInt(req.query.limit as string) || 100;
 
@@ -411,7 +421,7 @@ router.get('/logins/failed', async (req: Request, res: Response) => {
 
 // GET /api/salesforce/logins/by-type - Login stats by type
 router.get('/logins/by-type', async (req: Request, res: Response) => {
-  const session = (req as Request & { session: ReturnType<typeof getSession> }).session!;
+  const session = getReqSession(req);
   const days = parseInt(req.query.days as string) || 30;
 
   try {
@@ -425,7 +435,7 @@ router.get('/logins/by-type', async (req: Request, res: Response) => {
 
 // GET /api/salesforce/logins/by-hour - Login stats by hour
 router.get('/logins/by-hour', async (req: Request, res: Response) => {
-  const session = (req as Request & { session: ReturnType<typeof getSession> }).session!;
+  const session = getReqSession(req);
   const days = parseInt(req.query.days as string) || 7;
 
   try {
@@ -439,7 +449,7 @@ router.get('/logins/by-hour', async (req: Request, res: Response) => {
 
 // GET /api/salesforce/logins/by-day - Login stats by day
 router.get('/logins/by-day', async (req: Request, res: Response) => {
-  const session = (req as Request & { session: ReturnType<typeof getSession> }).session!;
+  const session = getReqSession(req);
   const days = parseInt(req.query.days as string) || 30;
 
   try {
@@ -453,7 +463,7 @@ router.get('/logins/by-day', async (req: Request, res: Response) => {
 
 // GET /api/salesforce/users/growth - User growth over time
 router.get('/users/growth', async (req: Request, res: Response) => {
-  const session = (req as Request & { session: ReturnType<typeof getSession> }).session!;
+  const session = getReqSession(req);
   const months = parseInt(req.query.months as string) || 6;
 
   try {
@@ -467,7 +477,7 @@ router.get('/users/growth', async (req: Request, res: Response) => {
 
 // GET /api/salesforce/security - Security insights
 router.get('/security', async (req: Request, res: Response) => {
-  const session = (req as Request & { session: ReturnType<typeof getSession> }).session!;
+  const session = getReqSession(req);
 
   try {
     const insights = await getSecurityInsights(session);
@@ -480,7 +490,7 @@ router.get('/security', async (req: Request, res: Response) => {
 
 // GET /api/salesforce/dashboard - Comprehensive dashboard data
 router.get('/dashboard', async (req: Request, res: Response) => {
-  const session = (req as Request & { session: ReturnType<typeof getSession> }).session!;
+  const session = getReqSession(req);
 
   try {
     const dashboard = await getComprehensiveDashboard(session);
@@ -497,7 +507,7 @@ router.get('/dashboard', async (req: Request, res: Response) => {
 
 // GET /api/salesforce/integrations - Integration users, OAuth tokens, packages, credentials
 router.get('/integrations', async (req: Request, res: Response) => {
-  const session = (req as Request & { session: ReturnType<typeof getSession> }).session!;
+  const session = getReqSession(req);
 
   try {
     const data = await getIntegrationsData(session);
@@ -544,7 +554,7 @@ router.get('/integrations', async (req: Request, res: Response) => {
 
 // GET /api/salesforce/permissions - Permission sets, high-risk users, profiles
 router.get('/permissions', async (req: Request, res: Response) => {
-  const session = (req as Request & { session: ReturnType<typeof getSession> }).session!;
+  const session = getReqSession(req);
 
   try {
     const data = await getPermissionsData(session);
@@ -593,7 +603,7 @@ router.get('/permissions', async (req: Request, res: Response) => {
 
 // GET /api/salesforce/anomalies - Concurrent sessions, login anomalies, failed patterns
 router.get('/anomalies', async (req: Request, res: Response) => {
-  const session = (req as Request & { session: ReturnType<typeof getSession> }).session!;
+  const session = getReqSession(req);
   const days = parseInt(req.query.days as string) || 7;
 
   try {
@@ -636,7 +646,7 @@ router.get('/anomalies', async (req: Request, res: Response) => {
 
 // GET /api/salesforce/config-health - Security health check, MFA coverage, certificates
 router.get('/config-health', async (req: Request, res: Response) => {
-  const session = (req as Request & { session: ReturnType<typeof getSession> }).session!;
+  const session = getReqSession(req);
 
   try {
     const data = await getConfigHealthData(session);
@@ -679,7 +689,7 @@ router.get('/config-health', async (req: Request, res: Response) => {
 
 // GET /api/salesforce/data-access - Audit events, guest users, sharing rules
 router.get('/data-access', async (req: Request, res: Response) => {
-  const session = (req as Request & { session: ReturnType<typeof getSession> }).session!;
+  const session = getReqSession(req);
 
   try {
     const data = await getDataAccessData(session);
@@ -716,7 +726,7 @@ router.get('/data-access', async (req: Request, res: Response) => {
 
 // GET /api/salesforce/user-risk-scores - User risk scoring based on permissions, activity, and patterns
 router.get('/user-risk-scores', async (req: Request, res: Response) => {
-  const session = (req as Request & { session: ReturnType<typeof getSession> }).session!;
+  const session = getReqSession(req);
 
   try {
     const riskScores = await getUserRiskScores(session);
@@ -729,7 +739,7 @@ router.get('/user-risk-scores', async (req: Request, res: Response) => {
 
 // GET /api/salesforce/token-risk - OAuth token risk analysis
 router.get('/token-risk', async (req: Request, res: Response) => {
-  const session = (req as Request & { session: ReturnType<typeof getSession> }).session!;
+  const session = getReqSession(req);
 
   try {
     const tokenRisk = await getTokenRiskData(session);
@@ -742,7 +752,7 @@ router.get('/token-risk', async (req: Request, res: Response) => {
 
 // GET /api/salesforce/remote-sites - Remote site settings (external URLs org can call)
 router.get('/remote-sites', async (req: Request, res: Response) => {
-  const session = (req as Request & { session: ReturnType<typeof getSession> }).session!;
+  const session = getReqSession(req);
 
   try {
     const sites = await getRemoteSiteSettings(session);
@@ -755,7 +765,7 @@ router.get('/remote-sites', async (req: Request, res: Response) => {
 
 // GET /api/salesforce/auth-providers - SSO/Auth provider configurations
 router.get('/auth-providers', async (req: Request, res: Response) => {
-  const session = (req as Request & { session: ReturnType<typeof getSession> }).session!;
+  const session = getReqSession(req);
 
   try {
     const providers = await getAuthProviders(session);
@@ -768,7 +778,7 @@ router.get('/auth-providers', async (req: Request, res: Response) => {
 
 // GET /api/salesforce/api-usage - API usage statistics
 router.get('/api-usage', async (req: Request, res: Response) => {
-  const session = (req as Request & { session: ReturnType<typeof getSession> }).session!;
+  const session = getReqSession(req);
 
   try {
     const usage = await getApiUsageData(session);

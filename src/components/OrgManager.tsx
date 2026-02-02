@@ -194,7 +194,7 @@ export function OrgManager({ selectedOrgId, onSelectOrg, onOrgRegistered, disabl
                         {storedCredentials.orgName || 'Salesforce Org'}
                       </div>
                       <div className="text-[10px] text-[hsl(var(--muted-foreground))]">
-                        {storedCredentials.environment} • PKCE Auth
+                        {storedCredentials.environment}
                       </div>
                     </div>
                   </div>
@@ -239,7 +239,7 @@ export function OrgManager({ selectedOrgId, onSelectOrg, onOrgRegistered, disabl
                     className="w-full flex items-center gap-2 px-3 py-2 text-xs text-[hsl(var(--success))] hover:bg-[hsl(var(--success)/0.1)]"
                   >
                     <LogIn className="w-3.5 h-3.5" />
-                    Login with Salesforce (PKCE)
+                    Login with Salesforce
                   </button>
                 )}
               </div>
@@ -250,11 +250,7 @@ export function OrgManager({ selectedOrgId, onSelectOrg, onOrgRegistered, disabl
               {showRegister ? (
                 <form onSubmit={handleRegister} className="p-3 space-y-3">
                   <div className="text-xs font-medium text-[hsl(var(--foreground))] mb-2">
-                    Configure Connected App (PKCE)
-                  </div>
-
-                  <div className="text-[10px] text-[hsl(var(--muted-foreground))] bg-[hsl(var(--info)/0.1)] px-2 py-1.5 rounded">
-                    PKCE is more secure - no client secret needed!
+                    Configure Connected App
                   </div>
 
                   {error && (
@@ -314,18 +310,12 @@ export function OrgManager({ selectedOrgId, onSelectOrg, onOrgRegistered, disabl
                   </div>
 
                   <a
-                    href="https://help.salesforce.com/s/articleView?id=sf.connected_app_create_basics.htm"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    href="/setup"
                     className="flex items-center gap-1 text-[10px] text-[hsl(var(--info))] hover:underline"
                   >
                     <ExternalLink className="w-2.5 h-2.5" />
-                    How to create a Connected App
+                    How to set up a Connected App
                   </a>
-
-                  <div className="text-[10px] text-[hsl(var(--muted-foreground))]">
-                    Tip: Enable "Require Proof Key for Code Exchange (PKCE)" in your Connected App settings.
-                  </div>
                 </form>
               ) : (
                 <button
