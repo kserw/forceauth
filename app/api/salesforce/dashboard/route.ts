@@ -22,7 +22,6 @@ interface LoginRecord {
   Browser: string | null;
   Platform: string | null;
   CountryIso: string | null;
-  City: string | null;
 }
 
 interface SessionRecord {
@@ -90,7 +89,7 @@ export async function GET() {
       browser: l.Browser,
       platform: l.Platform,
       country: l.CountryIso,
-      city: l.City,
+      city: null, // City field not available in all Salesforce editions
     }));
 
     // Format active sessions

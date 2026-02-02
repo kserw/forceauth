@@ -13,7 +13,6 @@ interface LoginRecord {
   Browser: string | null;
   Platform: string | null;
   CountryIso: string | null;
-  City: string | null;
 }
 
 export async function GET(request: Request) {
@@ -44,7 +43,7 @@ export async function GET(request: Request) {
       browser: r.Browser,
       platform: r.Platform,
       country: r.CountryIso,
-      city: r.City,
+      city: null, // City field not available in all Salesforce editions
     }));
 
     return NextResponse.json({ logins });

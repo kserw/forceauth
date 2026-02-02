@@ -63,7 +63,7 @@ export async function getRecentUsers(options: SalesforceApiOptions, limit = 10) 
 export async function getLoginHistory(options: SalesforceApiOptions, limit = 100) {
   const soql = `
     SELECT Id, UserId, LoginTime, SourceIp, LoginType, Status,
-           Application, Browser, Platform, CountryIso, City
+           Application, Browser, Platform, CountryIso
     FROM LoginHistory
     ORDER BY LoginTime DESC
     LIMIT ${limit}
@@ -140,21 +140,25 @@ export async function getLoginsByCountry(options: SalesforceApiOptions, days = 3
   return salesforceQuery<{ CountryIso: string; cnt: number }>(options, soql);
 }
 
-// Get logins by city
+// Get logins by city (City field may not be available in all orgs)
 export async function getLoginsByCity(options: SalesforceApiOptions, days = 30) {
+  // City field is not available in all Salesforce editions
+  // Return country-based data as fallback
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);
   const startDateStr = startDate.toISOString().split('T')[0];
 
   const soql = `
-    SELECT City, CountryIso, COUNT(Id) cnt
+    SELECT CountryIso, COUNT(Id) cnt
     FROM LoginHistory
     WHERE LoginTime >= ${startDateStr}T00:00:00Z
-    GROUP BY City, CountryIso
+    GROUP BY CountryIso
     ORDER BY COUNT(Id) DESC
     LIMIT 20
   `;
-  return salesforceQuery<{ City: string; CountryIso: string; cnt: number }>(options, soql);
+  const results = await salesforceQuery<{ CountryIso: string; cnt: number }>(options, soql);
+  // Map to expected format with city as country name
+  return results.map(r => ({ City: r.CountryIso || 'Unknown', CountryIso: r.CountryIso, cnt: r.cnt }));
 }
 
 // Get logins by source/application
@@ -182,7 +186,7 @@ export async function getFailedLogins(options: SalesforceApiOptions, days = 7, l
 
   const soql = `
     SELECT Id, UserId, LoginTime, SourceIp, LoginType, Status,
-           Application, Browser, Platform, CountryIso, City
+           Application, Browser, Platform, CountryIso
     FROM LoginHistory
     WHERE LoginTime >= ${startDateStr}T00:00:00Z AND Status != 'Success'
     ORDER BY LoginTime DESC

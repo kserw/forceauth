@@ -18,7 +18,6 @@ interface LoginRecord {
   LoginType: string;
   Status: string;
   CountryIso: string | null;
-  City: string | null;
 }
 
 export async function GET(request: Request) {
