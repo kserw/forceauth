@@ -1,18 +1,24 @@
 import { useEffect, useState, useRef } from 'react';
 import { UserX, Loader2, RefreshCw, AlertTriangle, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useDemoMode } from '../context/DemoModeContext';
 import { fetchPermissionsData, exportToCSV, type HighRiskUserInfo } from '../services/api';
+import { mockHighRiskUsers } from '../data/mockData';
 import { getSalesforceUserUrl } from '../utils/salesforceLinks';
 
 const ITEMS_PER_PAGE = 10;
 
 export function HighRiskUsersPanel() {
   const { isAuthenticated, instanceUrl, refreshKey } = useAuth();
+  const { isDemoMode } = useDemoMode();
   const [users, setUsers] = useState<HighRiskUserInfo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const showDemoIndicator = isDemoMode && !isAuthenticated;
+  const displayUsers = showDemoIndicator ? (mockHighRiskUsers as HighRiskUserInfo[]) : users;
 
   const loadData = () => {
     if (!isAuthenticated) return;
@@ -36,7 +42,7 @@ export function HighRiskUsersPanel() {
     loadData();
   }, [isAuthenticated, refreshKey]);
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !isDemoMode) {
     return (
       <div className="h-full p-4 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] flex flex-col">
         <div className="flex items-center justify-between mb-3">
@@ -49,7 +55,7 @@ export function HighRiskUsersPanel() {
     );
   }
 
-  if (error) {
+  if (error && !showDemoIndicator) {
     return (
       <div className="h-full p-4 rounded-md border border-[hsl(var(--destructive)/0.5)] bg-[hsl(var(--destructive)/0.1)] flex flex-col items-center justify-center">
         <span className="text-xs text-[hsl(var(--destructive))]">{error}</span>
@@ -59,7 +65,7 @@ export function HighRiskUsersPanel() {
 
   // Dedupe users and aggregate their permissions
   const userMap = new Map<string, { user: HighRiskUserInfo; permissions: string[] }>();
-  for (const u of users) {
+  for (const u of displayUsers) {
     const existing = userMap.get(u.userId);
     const perms: string[] = [];
     if (u.hasModifyAll) perms.push('ModifyAll');
@@ -100,6 +106,7 @@ export function HighRiskUsersPanel() {
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <AlertTriangle className="w-3.5 h-3.5 text-[hsl(var(--warning))]" />
+          {showDemoIndicator && <span className="mr-1 px-1.5 py-0.5 rounded text-[10px] bg-[hsl(var(--warning)/0.2)] text-[hsl(var(--warning))]">demo</span>}
           <span className="text-xs text-[hsl(var(--muted-foreground))]">// high_risk_users[]</span>
         </div>
         <div className="flex items-center gap-2">
@@ -125,7 +132,7 @@ export function HighRiskUsersPanel() {
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-auto -mx-4 px-4">
-        {isLoading && users.length === 0 ? (
+        {isLoading && displayUsers.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-5 h-5 animate-spin text-[hsl(var(--muted-foreground))]" />
           </div>

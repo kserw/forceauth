@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { TrendingUp, TrendingDown, Users, UserPlus, Activity, Globe, Loader2, BarChart3 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useDemoMode } from '../context/DemoModeContext';
 import { fetchDashboardStats, type DashboardStats } from '../services/api';
+import { mockDashboardStats } from '../data/mockData';
 
 type GrowthPeriod = '7d' | '30d' | '90d';
 
@@ -49,6 +51,7 @@ function StatCard({ label, value, change, icon, isLoading }: StatCardProps) {
 
 export function StatsCards() {
   const { isAuthenticated } = useAuth();
+  const { isDemoMode } = useDemoMode();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -88,8 +91,12 @@ export function StatsCards() {
     };
   }, [isAuthenticated]);
 
-  // Show empty state when not authenticated
-  if (!isAuthenticated) {
+  // Use mock data in demo mode
+  const displayStats = isDemoMode && !isAuthenticated ? mockDashboardStats : stats;
+  const showDemoIndicator = isDemoMode && !isAuthenticated;
+
+  // Show empty state when not authenticated and not in demo mode
+  if (!isAuthenticated && !isDemoMode) {
     return (
       <div className="h-full flex flex-col gap-2">
         <div className="flex items-center gap-2 px-1">
@@ -141,36 +148,38 @@ export function StatsCards() {
   return (
     <div className="h-full flex flex-col gap-2">
       <div className="flex items-center gap-2 px-1">
-        <div className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--success))] animate-pulse-subtle" />
-        <span className="text-xs text-[hsl(var(--muted-foreground))]">// live metrics</span>
+        <div className={`w-1.5 h-1.5 rounded-full ${showDemoIndicator ? 'bg-[hsl(var(--warning))]' : 'bg-[hsl(var(--success))] animate-pulse-subtle'}`} />
+        <span className="text-xs text-[hsl(var(--muted-foreground))]">
+          {showDemoIndicator ? '// demo metrics' : '// live metrics'}
+        </span>
       </div>
 
       <StatCard
         label="active_users"
-        value={stats?.activeUsers ?? '-'}
+        value={displayStats?.activeUsers ?? '-'}
         icon={<Users className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />}
-        isLoading={isLoading}
+        isLoading={isLoading && !showDemoIndicator}
       />
 
       <StatCard
         label="total_users"
-        value={stats?.totalUsers ?? '-'}
+        value={displayStats?.totalUsers ?? '-'}
         icon={<UserPlus className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />}
-        isLoading={isLoading}
+        isLoading={isLoading && !showDemoIndicator}
       />
 
       <StatCard
         label="logins_today"
-        value={stats?.loginsToday ?? '-'}
+        value={displayStats?.loginsToday ?? '-'}
         icon={<Activity className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />}
-        isLoading={isLoading}
+        isLoading={isLoading && !showDemoIndicator}
       />
 
       <StatCard
         label="unique_ips"
-        value={stats?.uniqueIpsToday ?? '-'}
+        value={displayStats?.uniqueIpsToday ?? '-'}
         icon={<Globe className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />}
-        isLoading={isLoading}
+        isLoading={isLoading && !showDemoIndicator}
       />
 
       {/* Growth stat with period selector */}
@@ -183,25 +192,25 @@ export function StatsCards() {
         </div>
 
         <div className="flex items-end justify-between">
-          {isLoading ? (
+          {isLoading && !showDemoIndicator ? (
             <Loader2 className="w-5 h-5 animate-spin text-[hsl(var(--muted-foreground))]" />
           ) : (
             <>
               <div className="flex items-center gap-2">
                 <span className="text-xl font-semibold text-[hsl(var(--foreground))] tabular-nums">
-                  {stats?.growth?.[growthPeriod]?.current ?? '-'}
+                  {displayStats?.growth?.[growthPeriod]?.current ?? '-'}
                 </span>
-                {stats?.growth?.[growthPeriod] && (
+                {displayStats?.growth?.[growthPeriod] && (
                   <div className={`flex items-center gap-0.5 text-xs ${
-                    stats.growth[growthPeriod].growth >= 0 ? 'text-[hsl(var(--success))]' : 'text-[hsl(var(--destructive))]'
+                    displayStats.growth[growthPeriod].growth >= 0 ? 'text-[hsl(var(--success))]' : 'text-[hsl(var(--destructive))]'
                   }`}>
-                    {stats.growth[growthPeriod].growth >= 0 ? (
+                    {displayStats.growth[growthPeriod].growth >= 0 ? (
                       <TrendingUp className="w-3 h-3" />
                     ) : (
                       <TrendingDown className="w-3 h-3" />
                     )}
                     <span className="tabular-nums">
-                      {stats.growth[growthPeriod].growth >= 0 ? '+' : ''}{stats.growth[growthPeriod].growth}%
+                      {displayStats.growth[growthPeriod].growth >= 0 ? '+' : ''}{displayStats.growth[growthPeriod].growth}%
                     </span>
                   </div>
                 )}

@@ -2,12 +2,15 @@ import { useState, useEffect } from 'react';
 import { XAxis, YAxis, ResponsiveContainer, Tooltip, Area, AreaChart, Bar, BarChart } from 'recharts';
 import { ExternalLink, TrendingUp, TrendingDown, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useDemoMode } from '../context/DemoModeContext';
 import { fetchUserGrowth, fetchLoginsByDay, type UserGrowthStat, type LoginDayStat } from '../services/api';
+import { mockUserGrowth, mockLoginsByDay } from '../data/mockData';
 
 type TabType = 'users' | 'logins' | 'failed';
 
 export function UsersChart() {
   const { isAuthenticated } = useAuth();
+  const { isDemoMode } = useDemoMode();
   const [activeTab, setActiveTab] = useState<TabType>('users');
   const [userGrowth, setUserGrowth] = useState<UserGrowthStat[]>([]);
   const [loginsByDay, setLoginsByDay] = useState<LoginDayStat[]>([]);
@@ -39,18 +42,23 @@ export function UsersChart() {
     { id: 'failed', label: 'failed' },
   ];
 
+  // Use mock data in demo mode
+  const showDemoIndicator = isDemoMode && !isAuthenticated;
+  const displayUserGrowth = showDemoIndicator ? mockUserGrowth : userGrowth;
+  const displayLoginsByDay = showDemoIndicator ? mockLoginsByDay : loginsByDay;
+
   // Calculate stats for authenticated view
-  const latestGrowth = userGrowth[userGrowth.length - 1];
-  const previousGrowth = userGrowth[userGrowth.length - 2];
+  const latestGrowth = displayUserGrowth[displayUserGrowth.length - 1];
+  const previousGrowth = displayUserGrowth[displayUserGrowth.length - 2];
   const growthChange = latestGrowth && previousGrowth
     ? ((latestGrowth.cumulative - previousGrowth.cumulative) / previousGrowth.cumulative * 100).toFixed(1)
     : '0';
 
-  const totalLogins = loginsByDay.reduce((sum, d) => sum + d.count, 0);
-  const totalFailed = loginsByDay.reduce((sum, d) => sum + d.failCount, 0);
+  const totalLogins = displayLoginsByDay.reduce((sum, d) => sum + d.count, 0);
+  const totalFailed = displayLoginsByDay.reduce((sum, d) => sum + d.failCount, 0);
 
-  // Empty state for non-authenticated view
-  if (!isAuthenticated) {
+  // Empty state for non-authenticated view (only when not in demo mode)
+  if (!isAuthenticated && !isDemoMode) {
     return (
       <div className="h-full p-4 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] flex flex-col">
         <div className="flex items-center justify-between mb-4">
@@ -76,7 +84,7 @@ export function UsersChart() {
     );
   }
 
-  if (isLoading) {
+  if (isLoading && !showDemoIndicator) {
     return (
       <div className="h-full p-4 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] flex flex-col items-center justify-center">
         <Loader2 className="w-5 h-5 animate-spin text-[hsl(var(--muted-foreground))]" />
@@ -88,6 +96,9 @@ export function UsersChart() {
     <div className="h-full p-4 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-1 text-xs">
+          {showDemoIndicator && (
+            <span className="mr-1 px-1.5 py-0.5 rounded text-[10px] bg-[hsl(var(--warning)/0.2)] text-[hsl(var(--warning))]">demo</span>
+          )}
           <span className="text-[hsl(var(--muted-foreground))]">stats.</span>
           {tabs.map((tab, i) => (
             <span key={tab.id} className="flex items-center">
@@ -129,7 +140,7 @@ export function UsersChart() {
 
           <div className="flex-1 min-h-0">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={userGrowth} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+              <AreaChart data={displayUserGrowth} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorGrowth" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="hsl(var(--foreground))" stopOpacity={0.1} />
@@ -161,7 +172,7 @@ export function UsersChart() {
 
           <div className="flex-1 min-h-0">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={loginsByDay} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+              <BarChart data={displayLoginsByDay} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
                 <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} dy={8} tickFormatter={(v) => new Date(v).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} />
                 <YAxis hide />
                 <Tooltip
@@ -188,7 +199,7 @@ export function UsersChart() {
 
           <div className="flex-1 min-h-0">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={loginsByDay} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+              <BarChart data={displayLoginsByDay} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
                 <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} dy={8} tickFormatter={(v) => new Date(v).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} />
                 <YAxis hide />
                 <Tooltip

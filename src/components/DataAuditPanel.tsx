@@ -1,8 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
 import { FileText, Loader2, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useDemoMode } from '../context/DemoModeContext';
 import { fetchDataAccessData, type DataAuditEventInfo } from '../services/api';
 import { getSalesforceSetupAuditTrailUrl } from '../utils/salesforceLinks';
+import { mockDataAuditEvents } from '../data/mockData';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -23,11 +25,15 @@ function formatTimeAgo(dateString: string): string {
 
 export function DataAuditPanel() {
   const { isAuthenticated, instanceUrl, refreshKey } = useAuth();
+  const { isDemoMode } = useDemoMode();
   const [events, setEvents] = useState<DataAuditEventInfo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const showDemoIndicator = isDemoMode && !isAuthenticated;
+  const displayEvents = showDemoIndicator ? (mockDataAuditEvents as DataAuditEventInfo[]) : events;
 
   const loadData = () => {
     if (!isAuthenticated) return;
@@ -51,7 +57,7 @@ export function DataAuditPanel() {
     loadData();
   }, [isAuthenticated, refreshKey]);
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !isDemoMode) {
     return (
       <div className="h-full p-4 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] flex flex-col">
         <div className="flex items-center justify-between mb-3">
@@ -64,7 +70,7 @@ export function DataAuditPanel() {
     );
   }
 
-  if (error) {
+  if (error && !showDemoIndicator) {
     return (
       <div className="h-full p-4 rounded-md border border-[hsl(var(--destructive)/0.5)] bg-[hsl(var(--destructive)/0.1)] flex flex-col items-center justify-center">
         <span className="text-xs text-[hsl(var(--destructive))]">{error}</span>
@@ -72,16 +78,19 @@ export function DataAuditPanel() {
     );
   }
 
-  const totalPages = Math.ceil(events.length / ITEMS_PER_PAGE);
-  const paginatedEvents = events.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(displayEvents.length / ITEMS_PER_PAGE);
+  const paginatedEvents = displayEvents.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
 
   return (
     <div className="h-full p-4 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] flex flex-col">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs text-[hsl(var(--muted-foreground))]">// data_audit_trail[]</span>
+        <div className="flex items-center gap-2">
+          {showDemoIndicator && <span className="mr-1 px-1.5 py-0.5 rounded text-[10px] bg-[hsl(var(--warning)/0.2)] text-[hsl(var(--warning))]">demo</span>}
+          <span className="text-xs text-[hsl(var(--muted-foreground))]">// data_audit_trail[]</span>
+        </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-[hsl(var(--muted-foreground))] tabular-nums">
-            {isLoading ? <Loader2 className="w-3 h-3 animate-spin inline" /> : `${events.length} events`}
+            {isLoading ? <Loader2 className="w-3 h-3 animate-spin inline" /> : `${displayEvents.length} events`}
           </span>
           <button
             onClick={loadData}
@@ -94,11 +103,11 @@ export function DataAuditPanel() {
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-auto -mx-4 px-4">
-        {isLoading && events.length === 0 ? (
+        {isLoading && displayEvents.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-5 h-5 animate-spin text-[hsl(var(--muted-foreground))]" />
           </div>
-        ) : events.length === 0 ? (
+        ) : displayEvents.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <span className="text-xs text-[hsl(var(--muted-foreground))]">no data-related audit events found</span>
           </div>
@@ -142,7 +151,7 @@ export function DataAuditPanel() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between pt-3 mt-3 border-t border-[hsl(var(--border))]">
           <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
-            {currentPage * ITEMS_PER_PAGE + 1}-{Math.min((currentPage + 1) * ITEMS_PER_PAGE, events.length)} of {events.length}
+            {currentPage * ITEMS_PER_PAGE + 1}-{Math.min((currentPage + 1) * ITEMS_PER_PAGE, displayEvents.length)} of {displayEvents.length}
           </span>
           <div className="flex items-center gap-1">
             <button

@@ -13,8 +13,10 @@ import { AuditTrail } from './components/AuditTrail';
 import { OrgLimitsPanel } from './components/OrgLimitsPanel';
 import { Navigation } from './components/Navigation';
 import { LandingPage } from './components/LandingPage';
+import { DemoModeBanner } from './components/DemoModeBanner';
 import { useAuth } from './context/AuthContext';
 import { useTab } from './context/TabContext';
+import { useDemoMode } from './context/DemoModeContext';
 import { X } from 'lucide-react';
 
 // Users tab components
@@ -47,6 +49,7 @@ import { DataAuditPanel } from './components/DataAuditPanel';
 function App() {
   const { error, clearError, isAuthenticated, isLoading } = useAuth();
   const { activeTab } = useTab();
+  const { isDemoMode, setDemoMode } = useDemoMode();
   const [showDashboard, setShowDashboard] = useState(false);
   const [integrationsSubTab, setIntegrationsSubTab] = useState<'overview' | 'tracking'>('overview');
   const [openOrgDropdown, setOpenOrgDropdown] = useState(false);
@@ -56,11 +59,23 @@ function App() {
     window.scrollTo(0, 0);
   }, [activeTab]);
 
+  // Sync demo mode with auth state:
+  // - When authenticated, disable demo mode
+  // - When viewing dashboard without auth, enable demo mode
+  useEffect(() => {
+    if (isAuthenticated) {
+      setDemoMode(false);
+    } else if (showDashboard) {
+      setDemoMode(true);
+    }
+  }, [isAuthenticated, showDashboard, setDemoMode]);
+
   // Show landing page if not authenticated and user hasn't clicked to enter dashboard
   // Wait for auth check to complete first
   if (!isLoading && !isAuthenticated && !showDashboard) {
     return <LandingPage onGetStarted={() => {
       setShowDashboard(true);
+      setDemoMode(true);
       setOpenOrgDropdown(true);
     }} />;
   }
@@ -80,6 +95,10 @@ function App() {
             <X className="w-4 h-4 text-[hsl(var(--destructive))]" />
           </button>
         </div>
+      )}
+
+      {isDemoMode && !isAuthenticated && (
+        <DemoModeBanner onConnectOrg={() => setOpenOrgDropdown(true)} />
       )}
 
       <main className="flex-1 px-5 py-5 space-y-5">

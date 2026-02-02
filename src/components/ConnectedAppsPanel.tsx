@@ -1,7 +1,9 @@
 import { useEffect, useState, useRef } from 'react';
 import { AppWindow, Loader2, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useDemoMode } from '../context/DemoModeContext';
 import { fetchIntegrationsData, type OAuthTokenInfo } from '../services/api';
+import { mockConnectedApps } from '../data/mockData';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -13,11 +15,14 @@ function formatDate(dateString: string | null): string {
 
 export function ConnectedAppsPanel() {
   const { isAuthenticated, refreshKey } = useAuth();
+  const { isDemoMode } = useDemoMode();
   const [tokens, setTokens] = useState<OAuthTokenInfo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const showDemoIndicator = isDemoMode && !isAuthenticated;
 
   const loadData = () => {
     if (!isAuthenticated) return;
@@ -41,7 +46,7 @@ export function ConnectedAppsPanel() {
     loadData();
   }, [isAuthenticated, refreshKey]);
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !isDemoMode) {
     return (
       <div className="h-full p-4 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] flex flex-col">
         <div className="flex items-center justify-between mb-3">
@@ -54,7 +59,7 @@ export function ConnectedAppsPanel() {
     );
   }
 
-  if (error) {
+  if (error && !showDemoIndicator) {
     return (
       <div className="h-full p-4 rounded-md border border-[hsl(var(--destructive)/0.5)] bg-[hsl(var(--destructive)/0.1)] flex flex-col items-center justify-center">
         <span className="text-xs text-[hsl(var(--destructive))]">{error}</span>
@@ -74,7 +79,15 @@ export function ConnectedAppsPanel() {
     return acc;
   }, {} as Record<string, { count: number; lastUsed: string | null }>);
 
-  const apps = Object.entries(appGroups).sort((a, b) => b[1].count - a[1].count);
+  // For demo mode, transform mockConnectedApps to the same format
+  const demoApps: [string, { count: number; lastUsed: string | null }][] = mockConnectedApps.map(app => [
+    app.name,
+    { count: 1, lastUsed: app.lastModifiedDate }
+  ]);
+
+  const apps = showDemoIndicator
+    ? demoApps
+    : Object.entries(appGroups).sort((a, b) => b[1].count - a[1].count);
 
   const totalPages = Math.ceil(apps.length / ITEMS_PER_PAGE);
   const paginatedApps = apps.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
@@ -82,7 +95,10 @@ export function ConnectedAppsPanel() {
   return (
     <div className="h-full p-4 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] flex flex-col">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs text-[hsl(var(--muted-foreground))]">// connected_apps[]</span>
+        <div className="flex items-center gap-2">
+          {showDemoIndicator && <span className="mr-1 px-1.5 py-0.5 rounded text-[10px] bg-[hsl(var(--warning)/0.2)] text-[hsl(var(--warning))]">demo</span>}
+          <span className="text-xs text-[hsl(var(--muted-foreground))]">// connected_apps[]</span>
+        </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-[hsl(var(--muted-foreground))] tabular-nums">
             {isLoading ? <Loader2 className="w-3 h-3 animate-spin inline" /> : `${apps.length} apps`}
@@ -98,7 +114,7 @@ export function ConnectedAppsPanel() {
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-auto -mx-4 px-4">
-        {isLoading && tokens.length === 0 ? (
+        {isLoading && tokens.length === 0 && !showDemoIndicator ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-5 h-5 animate-spin text-[hsl(var(--muted-foreground))]" />
           </div>

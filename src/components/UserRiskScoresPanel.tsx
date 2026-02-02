@@ -1,7 +1,9 @@
 import { useEffect, useState, useRef } from 'react';
 import { AlertTriangle, Loader2, RefreshCw, ChevronLeft, ChevronRight, Download, Shield, ShieldAlert, ShieldX, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useDemoMode } from '../context/DemoModeContext';
 import { fetchUserRiskScores, exportToCSV, type UserRiskScore } from '../services/api';
+import { mockUserRiskScores } from '../data/mockData';
 import { getSalesforceUserUrl } from '../utils/salesforceLinks';
 
 const ITEMS_PER_PAGE = 10;
@@ -41,12 +43,16 @@ function getRiskScoreColor(score: number) {
 
 export function UserRiskScoresPanel() {
   const { isAuthenticated, instanceUrl, refreshKey } = useAuth();
+  const { isDemoMode } = useDemoMode();
   const [users, setUsers] = useState<UserRiskScore[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const showDemoIndicator = isDemoMode && !isAuthenticated;
+  const displayUsers = showDemoIndicator ? (mockUserRiskScores as UserRiskScore[]) : users;
 
   const loadData = () => {
     if (!isAuthenticated) return;
@@ -84,7 +90,7 @@ export function UserRiskScoresPanel() {
     ]);
   };
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !isDemoMode) {
     return (
       <div className="h-full p-4 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] flex flex-col">
         <div className="flex items-center justify-between mb-3">
@@ -97,7 +103,7 @@ export function UserRiskScoresPanel() {
     );
   }
 
-  if (error) {
+  if (error && !showDemoIndicator) {
     return (
       <div className="h-full p-4 rounded-md border border-[hsl(var(--destructive)/0.5)] bg-[hsl(var(--destructive)/0.1)] flex flex-col items-center justify-center">
         <span className="text-xs text-[hsl(var(--destructive))]">{error}</span>
@@ -105,18 +111,19 @@ export function UserRiskScoresPanel() {
     );
   }
 
-  const totalPages = Math.ceil(users.length / ITEMS_PER_PAGE);
-  const paginatedUsers = users.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(displayUsers.length / ITEMS_PER_PAGE);
+  const paginatedUsers = displayUsers.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
 
   // Calculate summary stats
-  const criticalCount = users.filter(u => u.riskLevel === 'critical').length;
-  const highCount = users.filter(u => u.riskLevel === 'high').length;
+  const criticalCount = displayUsers.filter(u => u.riskLevel === 'critical').length;
+  const highCount = displayUsers.filter(u => u.riskLevel === 'high').length;
 
   return (
     <div className="h-full p-4 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] flex flex-col">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <AlertTriangle className="w-3.5 h-3.5 text-[hsl(var(--warning))]" />
+          {showDemoIndicator && <span className="mr-1 px-1.5 py-0.5 rounded text-[10px] bg-[hsl(var(--warning)/0.2)] text-[hsl(var(--warning))]">demo</span>}
           <span className="text-xs text-[hsl(var(--muted-foreground))]">// user_risk_scores[]</span>
         </div>
         <div className="flex items-center gap-2">
@@ -131,7 +138,7 @@ export function UserRiskScoresPanel() {
             </span>
           )}
           <span className="text-xs text-[hsl(var(--muted-foreground))] tabular-nums">
-            {isLoading ? <Loader2 className="w-3 h-3 animate-spin inline" /> : `${users.length} users`}
+            {isLoading ? <Loader2 className="w-3 h-3 animate-spin inline" /> : `${displayUsers.length} users`}
           </span>
           <button
             onClick={handleExport}
@@ -152,11 +159,11 @@ export function UserRiskScoresPanel() {
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-auto -mx-4 px-4">
-        {isLoading && users.length === 0 ? (
+        {isLoading && displayUsers.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-5 h-5 animate-spin text-[hsl(var(--muted-foreground))]" />
           </div>
-        ) : users.length === 0 ? (
+        ) : displayUsers.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <span className="text-xs text-[hsl(var(--muted-foreground))]">no users found</span>
           </div>
@@ -264,7 +271,7 @@ export function UserRiskScoresPanel() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between pt-3 mt-3 border-t border-[hsl(var(--border))]">
           <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
-            {currentPage * ITEMS_PER_PAGE + 1}-{Math.min((currentPage + 1) * ITEMS_PER_PAGE, users.length)} of {users.length}
+            {currentPage * ITEMS_PER_PAGE + 1}-{Math.min((currentPage + 1) * ITEMS_PER_PAGE, displayUsers.length)} of {displayUsers.length}
           </span>
           <div className="flex items-center gap-1">
             <button

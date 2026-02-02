@@ -1,7 +1,9 @@
 import { useEffect, useState, useRef } from 'react';
 import { AlertTriangle, Loader2, RefreshCw, Clock, MapPin, Globe, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useDemoMode } from '../context/DemoModeContext';
 import { fetchAnomaliesData, type LoginAnomalyInfo } from '../services/api';
+import { mockLoginAnomalies } from '../data/mockData';
 import { getSalesforceUserUrl } from '../utils/salesforceLinks';
 
 const ITEMS_PER_PAGE = 10;
@@ -37,11 +39,15 @@ function getAnomalyColor(type: string) {
 
 export function LoginAnomaliesPanel() {
   const { isAuthenticated, instanceUrl, refreshKey } = useAuth();
+  const { isDemoMode } = useDemoMode();
   const [anomalies, setAnomalies] = useState<LoginAnomalyInfo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const showDemoIndicator = isDemoMode && !isAuthenticated;
+  const displayAnomalies = showDemoIndicator ? (mockLoginAnomalies as LoginAnomalyInfo[]) : anomalies;
 
   const loadData = () => {
     if (!isAuthenticated) return;
@@ -65,10 +71,10 @@ export function LoginAnomaliesPanel() {
     loadData();
   }, [isAuthenticated, refreshKey]);
 
-  const totalPages = Math.ceil(anomalies.length / ITEMS_PER_PAGE);
-  const paginatedAnomalies = anomalies.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(displayAnomalies.length / ITEMS_PER_PAGE);
+  const paginatedAnomalies = displayAnomalies.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !isDemoMode) {
     return (
       <div className="h-full p-4 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] flex flex-col">
         <div className="flex items-center justify-between mb-3">
@@ -81,7 +87,7 @@ export function LoginAnomaliesPanel() {
     );
   }
 
-  if (error) {
+  if (error && !showDemoIndicator) {
     return (
       <div className="h-full p-4 rounded-md border border-[hsl(var(--destructive)/0.5)] bg-[hsl(var(--destructive)/0.1)] flex flex-col items-center justify-center">
         <span className="text-xs text-[hsl(var(--destructive))]">{error}</span>
@@ -94,11 +100,12 @@ export function LoginAnomaliesPanel() {
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <AlertTriangle className="w-3.5 h-3.5 text-[hsl(var(--warning))]" />
+          {showDemoIndicator && <span className="mr-1 px-1.5 py-0.5 rounded text-[10px] bg-[hsl(var(--warning)/0.2)] text-[hsl(var(--warning))]">demo</span>}
           <span className="text-xs text-[hsl(var(--muted-foreground))]">// login_anomalies[]</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-[hsl(var(--muted-foreground))] tabular-nums">
-            {isLoading ? <Loader2 className="w-3 h-3 animate-spin inline" /> : `${anomalies.length} detected`}
+            {isLoading ? <Loader2 className="w-3 h-3 animate-spin inline" /> : `${displayAnomalies.length} detected`}
           </span>
           <button
             onClick={loadData}
@@ -111,11 +118,11 @@ export function LoginAnomaliesPanel() {
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-auto -mx-4 px-4">
-        {isLoading && anomalies.length === 0 ? (
+        {isLoading && displayAnomalies.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-5 h-5 animate-spin text-[hsl(var(--muted-foreground))]" />
           </div>
-        ) : anomalies.length === 0 ? (
+        ) : displayAnomalies.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <span className="text-xs text-[hsl(var(--success))]">no login anomalies detected</span>
           </div>
@@ -161,7 +168,7 @@ export function LoginAnomaliesPanel() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between pt-3 mt-3 border-t border-[hsl(var(--border))]">
           <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
-            {currentPage * ITEMS_PER_PAGE + 1}-{Math.min((currentPage + 1) * ITEMS_PER_PAGE, anomalies.length)} of {anomalies.length}
+            {currentPage * ITEMS_PER_PAGE + 1}-{Math.min((currentPage + 1) * ITEMS_PER_PAGE, displayAnomalies.length)} of {displayAnomalies.length}
           </span>
           <div className="flex items-center gap-1">
             <button

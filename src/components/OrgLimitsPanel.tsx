@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Loader2, AlertTriangle, CheckCircle, Gauge } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useDemoMode } from '../context/DemoModeContext';
 import { fetchOrgLimits, type OrgLimit } from '../services/api';
+import { mockOrgLimits } from '../data/mockData';
 
 interface LimitBarProps {
   name: string;
@@ -52,9 +54,12 @@ function LimitBar({ name, limit }: LimitBarProps) {
 
 export function OrgLimitsPanel() {
   const { isAuthenticated } = useAuth();
+  const { isDemoMode } = useDemoMode();
   const [limits, setLimits] = useState<Record<string, OrgLimit> | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const showDemoIndicator = isDemoMode && !isAuthenticated;
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -74,7 +79,9 @@ export function OrgLimitsPanel() {
       .finally(() => setIsLoading(false));
   }, [isAuthenticated]);
 
-  if (!isAuthenticated) {
+  const displayLimits = showDemoIndicator ? mockOrgLimits : limits;
+
+  if (!isAuthenticated && !isDemoMode) {
     return (
       <div className="h-full p-4 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] flex flex-col">
         <div className="flex items-center justify-between mb-4">
@@ -87,7 +94,7 @@ export function OrgLimitsPanel() {
     );
   }
 
-  if (error) {
+  if (error && !showDemoIndicator) {
     return (
       <div className="h-full p-4 rounded-md border border-[hsl(var(--destructive)/0.5)] bg-[hsl(var(--destructive)/0.1)] flex flex-col items-center justify-center">
         <span className="text-xs text-[hsl(var(--destructive))]">{error}</span>
@@ -95,7 +102,7 @@ export function OrgLimitsPanel() {
     );
   }
 
-  if (isLoading || !limits) {
+  if ((isLoading || !limits) && !showDemoIndicator) {
     return (
       <div className="h-full p-4 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] flex flex-col">
         <div className="flex items-center justify-between mb-4">
@@ -108,7 +115,7 @@ export function OrgLimitsPanel() {
     );
   }
 
-  const limitEntries = Object.entries(limits);
+  const limitEntries = Object.entries(displayLimits!);
   const criticalLimits = limitEntries.filter(([, l]) => {
     const pct = ((l.Max - l.Remaining) / l.Max) * 100;
     return pct >= 70;
@@ -121,7 +128,10 @@ export function OrgLimitsPanel() {
   return (
     <div className="h-full p-4 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] flex flex-col">
       <div className="flex items-center justify-between mb-4">
-        <span className="text-xs text-[hsl(var(--muted-foreground))]">// org.limits()</span>
+        <span className="text-xs text-[hsl(var(--muted-foreground))]">
+          {showDemoIndicator && <span className="mr-1 px-1.5 py-0.5 rounded text-[10px] bg-[hsl(var(--warning)/0.2)] text-[hsl(var(--warning))]">demo</span>}
+          // org.limits()
+        </span>
         <div className="flex items-center gap-2">
           {criticalLimits.length > 0 ? (
             <div className="flex items-center gap-1 text-[hsl(var(--warning))]">

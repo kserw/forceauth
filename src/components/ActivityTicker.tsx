@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useDemoMode } from '../context/DemoModeContext';
 import { fetchAuditTrail, fetchLogins, fetchUsers, type LoginRecord, type SalesforceUser } from '../services/api';
+import { mockActivities } from '../data/mockData';
 
 interface ActivityItem {
   id: string;
@@ -60,9 +62,13 @@ function getLocationStr(login: LoginRecord): string {
 
 export function ActivityTicker() {
   const { isAuthenticated } = useAuth();
+  const { isDemoMode } = useDemoMode();
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Use mock data in demo mode
+  const showDemoIndicator = isDemoMode && !isAuthenticated;
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -154,8 +160,8 @@ export function ActivityTicker() {
       .finally(() => setIsLoading(false));
   }, [isAuthenticated]);
 
-  // Show empty state when not authenticated
-  if (!isAuthenticated) {
+  // Show empty state when not authenticated and not in demo mode
+  if (!isAuthenticated && !isDemoMode) {
     return (
       <div className="relative border-y border-[hsl(var(--border))] bg-[hsl(var(--card))] py-2.5 overflow-hidden">
         <div className="flex items-center justify-center text-xs text-[hsl(var(--muted-foreground))]">
@@ -165,8 +171,8 @@ export function ActivityTicker() {
     );
   }
 
-  // Show loading state
-  if (isLoading) {
+  // Show loading state (only when not in demo mode)
+  if (isLoading && !showDemoIndicator) {
     return (
       <div className="relative border-y border-[hsl(var(--border))] bg-[hsl(var(--card))] py-2.5 overflow-hidden">
         <div className="flex items-center justify-center gap-2 text-xs text-[hsl(var(--muted-foreground))]">
@@ -177,8 +183,8 @@ export function ActivityTicker() {
     );
   }
 
-  // Show error state
-  if (error) {
+  // Show error state (only when not in demo mode)
+  if (error && !showDemoIndicator) {
     return (
       <div className="relative border-y border-[hsl(var(--border))] bg-[hsl(var(--card))] py-2.5 overflow-hidden">
         <div className="flex items-center justify-center text-xs text-[hsl(var(--destructive))]">
@@ -188,8 +194,11 @@ export function ActivityTicker() {
     );
   }
 
-  // Show empty state if no activities
-  if (activities.length === 0) {
+  // Use mock activities in demo mode
+  const displayActivities = showDemoIndicator ? mockActivities : activities;
+
+  // Show empty state if no activities (only when not in demo mode)
+  if (displayActivities.length === 0) {
     return (
       <div className="relative border-y border-[hsl(var(--border))] bg-[hsl(var(--card))] py-2.5 overflow-hidden">
         <div className="flex items-center justify-center text-xs text-[hsl(var(--muted-foreground))]">
@@ -200,7 +209,7 @@ export function ActivityTicker() {
   }
 
   // Double for marquee animation
-  const eventsList = [...activities, ...activities];
+  const eventsList = [...displayActivities, ...displayActivities];
 
   return (
     <div className="relative border-y border-[hsl(var(--border))] bg-[hsl(var(--card))] py-2.5 overflow-hidden">

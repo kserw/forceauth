@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Activity, Loader2, RefreshCw, Download } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useDemoMode } from '../context/DemoModeContext';
 import { fetchApiUsageData, exportToCSV, type ApiUsageData } from '../services/api';
+import { mockApiUsage } from '../data/mockData';
 
 function formatNumber(num: number): string {
   if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
@@ -23,9 +25,13 @@ function getUsageBgColor(percent: number): string {
 
 export function ApiUsagePanel() {
   const { isAuthenticated, refreshKey } = useAuth();
+  const { isDemoMode } = useDemoMode();
   const [data, setData] = useState<ApiUsageData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const showDemoIndicator = isDemoMode && !isAuthenticated;
+  const displayData = showDemoIndicator ? (mockApiUsage as ApiUsageData) : data;
 
   const loadData = () => {
     if (!isAuthenticated) return;
@@ -58,7 +64,7 @@ export function ApiUsagePanel() {
     ]);
   };
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !isDemoMode) {
     return (
       <div className="h-full p-4 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] flex flex-col">
         <div className="flex items-center justify-between mb-3">
@@ -71,7 +77,7 @@ export function ApiUsagePanel() {
     );
   }
 
-  if (error) {
+  if (error && !showDemoIndicator) {
     return (
       <div className="h-full p-4 rounded-md border border-[hsl(var(--destructive)/0.5)] bg-[hsl(var(--destructive)/0.1)] flex flex-col items-center justify-center">
         <span className="text-xs text-[hsl(var(--destructive))]">{error}</span>
@@ -79,24 +85,25 @@ export function ApiUsagePanel() {
     );
   }
 
-  const usedCalls = data ? data.totalCalls - data.remainingCalls : 0;
+  const usedCalls = displayData ? displayData.totalCalls - displayData.remainingCalls : 0;
 
   return (
     <div className="h-full p-4 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] flex flex-col">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Activity className="w-3.5 h-3.5 text-[hsl(var(--info))]" />
+          {showDemoIndicator && <span className="mr-1 px-1.5 py-0.5 rounded text-[10px] bg-[hsl(var(--warning)/0.2)] text-[hsl(var(--warning))]">demo</span>}
           <span className="text-xs text-[hsl(var(--muted-foreground))]">// api_usage{}</span>
         </div>
         <div className="flex items-center gap-2">
-          {data && (
-            <span className={`text-xs tabular-nums ${getUsageColor(data.usedPercent)}`}>
-              {data.usedPercent}% used
+          {displayData && (
+            <span className={`text-xs tabular-nums ${getUsageColor(displayData.usedPercent)}`}>
+              {displayData.usedPercent}% used
             </span>
           )}
           <button
             onClick={handleExport}
-            disabled={isLoading || !data || data.byApp.length === 0}
+            disabled={isLoading || !displayData || displayData.byApp.length === 0}
             className="p-1 rounded hover:bg-[hsl(var(--muted))] transition-colors disabled:opacity-50"
             title="Export to CSV"
           >
@@ -112,31 +119,31 @@ export function ApiUsagePanel() {
         </div>
       </div>
 
-      {isLoading && !data ? (
+      {isLoading && !displayData ? (
         <div className="flex-1 flex items-center justify-center">
           <Loader2 className="w-5 h-5 animate-spin text-[hsl(var(--muted-foreground))]" />
         </div>
-      ) : data ? (
+      ) : displayData ? (
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Usage bar */}
           <div className="mb-4">
             <div className="flex items-center justify-between mb-1">
               <span className="text-xs text-[hsl(var(--muted-foreground))]">daily API requests</span>
               <span className="text-xs text-[hsl(var(--muted-foreground))] tabular-nums">
-                {formatNumber(usedCalls)} / {formatNumber(data.totalCalls)}
+                {formatNumber(usedCalls)} / {formatNumber(displayData.totalCalls)}
               </span>
             </div>
             <div className="h-2 bg-[hsl(var(--muted))] rounded-full overflow-hidden">
               <div
-                className={`h-full ${getUsageBgColor(data.usedPercent)} transition-all`}
-                style={{ width: `${Math.min(data.usedPercent, 100)}%` }}
+                className={`h-full ${getUsageBgColor(displayData.usedPercent)} transition-all`}
+                style={{ width: `${Math.min(displayData.usedPercent, 100)}%` }}
               />
             </div>
             <div className="flex items-center justify-between mt-1">
               <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
-                {formatNumber(data.remainingCalls)} remaining
+                {formatNumber(displayData.remainingCalls)} remaining
               </span>
-              {data.usedPercent >= 80 && (
+              {displayData.usedPercent >= 80 && (
                 <span className="text-[10px] text-[hsl(var(--warning))]">
                   approaching limit
                 </span>
@@ -147,13 +154,13 @@ export function ApiUsagePanel() {
           {/* By app breakdown */}
           <div className="flex-1 overflow-auto -mx-4 px-4">
             <span className="text-[10px] text-[hsl(var(--muted-foreground))] block mb-2">usage by app (last 7 days)</span>
-            {data.byApp.length === 0 ? (
+            {displayData.byApp.length === 0 ? (
               <div className="text-center py-4">
                 <span className="text-xs text-[hsl(var(--muted-foreground))]">no API usage data available</span>
               </div>
             ) : (
               <div className="space-y-2">
-                {data.byApp.map((app) => (
+                {displayData.byApp.map((app) => (
                   <div key={app.appName} className="flex items-center gap-2">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-0.5">

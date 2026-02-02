@@ -63,9 +63,10 @@ export async function getOrgById(id: string): Promise<RegisteredOrg | null> {
 export async function registerOrg(
   orgName: string,
   environment: SalesforceEnvironment,
-  clientId: string,
-  clientSecret: string
+  clientId: string
 ): Promise<RegisteredOrg> {
+  // Note: This endpoint is stubbed in stateless mode (returns 501)
+  // Credentials are stored client-side in localStorage instead
   const response = await fetch(`${API_BASE}/orgs`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -74,11 +75,8 @@ export async function registerOrg(
       orgName,
       environment,
       clientId,
-      clientSecret,
-      // In development, API runs on port 3001; in production, same origin
-      redirectUri: import.meta.env.DEV
-        ? 'http://localhost:3001/api/auth/callback'
-        : `${window.location.origin}/api/auth/callback`,
+      // PKCE: No client secret needed
+      redirectUri: `${window.location.origin}/api/auth/callback`,
     }),
   });
 
@@ -91,14 +89,24 @@ export async function registerOrg(
 }
 
 export async function deleteOrg(id: string): Promise<void> {
+  // Include stored org ID to prove local association (for unauthenticated deletion)
+  const storedOrgId = localStorage.getItem('sf_selected_org_id');
+
   const response = await fetch(`${API_BASE}/orgs/${id}`, {
     method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
+    body: JSON.stringify({ storedOrgId }),
   });
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
     throw new Error(error.error || 'Failed to delete org');
+  }
+
+  // Clear localStorage if we just deleted the stored org
+  if (storedOrgId === id) {
+    localStorage.removeItem('sf_selected_org_id');
   }
 }
 
@@ -141,27 +149,70 @@ export interface PopupLoginResult {
   error?: string;
 }
 
-export function initiatePopupLogin(
+// Store org credentials in localStorage (PKCE - no secret needed!)
+export interface StoredOrgCredentials {
+  clientId: string;
+  redirectUri: string;
+  environment: SalesforceEnvironment;
+  orgName?: string;
+}
+
+export function storeOrgCredentials(credentials: StoredOrgCredentials): void {
+  localStorage.setItem('sf_org_credentials', JSON.stringify(credentials));
+}
+
+export function getStoredOrgCredentials(): StoredOrgCredentials | null {
+  const stored = localStorage.getItem('sf_org_credentials');
+  if (!stored) return null;
+  try {
+    return JSON.parse(stored);
+  } catch {
+    return null;
+  }
+}
+
+export function clearStoredOrgCredentials(): void {
+  localStorage.removeItem('sf_org_credentials');
+}
+
+export async function initiatePopupLogin(
   environment: SalesforceEnvironment,
-  orgId?: string
+  _orgId?: string // Kept for backward compatibility but not used in stateless mode
 ): Promise<PopupLoginResult> {
+  // Get stored credentials
+  const credentials = getStoredOrgCredentials();
+  if (!credentials) {
+    return { success: false, error: 'No org credentials stored. Please configure your Salesforce connected app.' };
+  }
+
+  // Get auth URL from server (PKCE - no client secret needed!)
+  const response = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      clientId: credentials.clientId,
+      redirectUri: credentials.redirectUri,
+      environment: environment || credentials.environment,
+      returnUrl: '/',
+      popup: true,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    return { success: false, error: error.error || 'Failed to initiate login' };
+  }
+
+  const { authUrl } = await response.json();
+
   return new Promise((resolve) => {
-    const params = new URLSearchParams({
-      env: environment,
-      popup: 'true',
-    });
-
-    if (orgId) {
-      params.set('orgId', orgId);
-    }
-
     const width = 600;
     const height = 700;
     const left = window.screenX + (window.outerWidth - width) / 2;
     const top = window.screenY + (window.outerHeight - height) / 2;
 
     const popup = window.open(
-      `${API_BASE}/auth/login?${params.toString()}`,
+      authUrl,
       'salesforce_oauth',
       `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
     );
@@ -224,6 +275,8 @@ export async function logout(): Promise<void> {
 }
 
 export async function refreshToken(): Promise<void> {
+  // PKCE refresh doesn't need credentials from localStorage
+  // The clientId is stored in the encrypted session cookie
   const response = await fetch(`${API_BASE}/auth/refresh`, {
     method: 'POST',
     credentials: 'include',

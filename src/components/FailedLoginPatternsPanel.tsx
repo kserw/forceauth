@@ -1,7 +1,9 @@
 import { useEffect, useState, useRef } from 'react';
 import { ShieldAlert, Loader2, RefreshCw, Globe, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useDemoMode } from '../context/DemoModeContext';
 import { fetchAnomaliesData, type FailedLoginPatternInfo } from '../services/api';
+import { mockFailedLoginPatterns } from '../data/mockData';
 
 const ITEMS_PER_PAGE = 5;
 
@@ -12,11 +14,15 @@ function formatTime(dateString: string): string {
 
 export function FailedLoginPatternsPanel() {
   const { isAuthenticated, refreshKey } = useAuth();
+  const { isDemoMode } = useDemoMode();
   const [patterns, setPatterns] = useState<FailedLoginPatternInfo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const showDemoIndicator = isDemoMode && !isAuthenticated;
+  const displayPatterns = showDemoIndicator ? (mockFailedLoginPatterns as FailedLoginPatternInfo[]) : patterns;
 
   const loadData = () => {
     if (!isAuthenticated) return;
@@ -40,10 +46,10 @@ export function FailedLoginPatternsPanel() {
     loadData();
   }, [isAuthenticated, refreshKey]);
 
-  const totalPages = Math.ceil(patterns.length / ITEMS_PER_PAGE);
-  const paginatedPatterns = patterns.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(displayPatterns.length / ITEMS_PER_PAGE);
+  const paginatedPatterns = displayPatterns.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !isDemoMode) {
     return (
       <div className="h-full p-4 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] flex flex-col">
         <div className="flex items-center justify-between mb-3">
@@ -56,7 +62,7 @@ export function FailedLoginPatternsPanel() {
     );
   }
 
-  if (error) {
+  if (error && !showDemoIndicator) {
     return (
       <div className="h-full p-4 rounded-md border border-[hsl(var(--destructive)/0.5)] bg-[hsl(var(--destructive)/0.1)] flex flex-col items-center justify-center">
         <span className="text-xs text-[hsl(var(--destructive))]">{error}</span>
@@ -75,11 +81,12 @@ export function FailedLoginPatternsPanel() {
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <ShieldAlert className="w-3.5 h-3.5 text-[hsl(var(--destructive))]" />
+          {showDemoIndicator && <span className="mr-1 px-1.5 py-0.5 rounded text-[10px] bg-[hsl(var(--warning)/0.2)] text-[hsl(var(--warning))]">demo</span>}
           <span className="text-xs text-[hsl(var(--muted-foreground))]">// failed_login_patterns[]</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-[hsl(var(--muted-foreground))] tabular-nums">
-            {isLoading ? <Loader2 className="w-3 h-3 animate-spin inline" /> : `${patterns.length} IPs`}
+            {isLoading ? <Loader2 className="w-3 h-3 animate-spin inline" /> : `${displayPatterns.length} IPs`}
           </span>
           <button
             onClick={loadData}
@@ -92,11 +99,11 @@ export function FailedLoginPatternsPanel() {
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-auto -mx-4 px-4">
-        {isLoading && patterns.length === 0 ? (
+        {isLoading && displayPatterns.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-5 h-5 animate-spin text-[hsl(var(--muted-foreground))]" />
           </div>
-        ) : patterns.length === 0 ? (
+        ) : displayPatterns.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <span className="text-xs text-[hsl(var(--success))]">no suspicious IP patterns detected</span>
           </div>
@@ -139,7 +146,7 @@ export function FailedLoginPatternsPanel() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between pt-3 mt-3 border-t border-[hsl(var(--border))]">
           <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
-            {currentPage * ITEMS_PER_PAGE + 1}-{Math.min((currentPage + 1) * ITEMS_PER_PAGE, patterns.length)} of {patterns.length}
+            {currentPage * ITEMS_PER_PAGE + 1}-{Math.min((currentPage + 1) * ITEMS_PER_PAGE, displayPatterns.length)} of {displayPatterns.length}
           </span>
           <div className="flex items-center gap-1">
             <button

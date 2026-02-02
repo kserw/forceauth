@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Shield, AlertTriangle, UserX, Globe, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useDemoMode } from '../context/DemoModeContext';
 import { fetchSecurityInsights, type SecurityInsights } from '../services/api';
+import { mockSecurityInsights } from '../data/mockData';
 
 interface SecurityMetricProps {
   label: string;
@@ -42,9 +44,13 @@ function SecurityMetric({ label, value, icon, severity, description }: SecurityM
 
 export function SecurityHealth() {
   const { isAuthenticated } = useAuth();
+  const { isDemoMode } = useDemoMode();
   const [insights, setInsights] = useState<SecurityInsights | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Use mock data in demo mode
+  const showDemoIndicator = isDemoMode && !isAuthenticated;
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -64,7 +70,10 @@ export function SecurityHealth() {
       .finally(() => setIsLoading(false));
   }, [isAuthenticated]);
 
-  if (!isAuthenticated) {
+  // Use mock data in demo mode
+  const displayInsights = showDemoIndicator ? mockSecurityInsights : insights;
+
+  if (!isAuthenticated && !isDemoMode) {
     return (
       <div className="h-full p-4 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] flex flex-col">
         <div className="flex items-center justify-between mb-4">
@@ -77,7 +86,7 @@ export function SecurityHealth() {
     );
   }
 
-  if (error) {
+  if (error && !showDemoIndicator) {
     return (
       <div className="h-full p-4 rounded-md border border-[hsl(var(--destructive)/0.5)] bg-[hsl(var(--destructive)/0.1)] flex flex-col items-center justify-center">
         <span className="text-xs text-[hsl(var(--destructive))]">{error}</span>
@@ -85,7 +94,7 @@ export function SecurityHealth() {
     );
   }
 
-  if (isLoading || !insights) {
+  if ((isLoading || !displayInsights) && !showDemoIndicator) {
     return (
       <div className="h-full p-4 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] flex flex-col">
         <div className="flex items-center justify-between mb-4">
@@ -98,14 +107,21 @@ export function SecurityHealth() {
     );
   }
 
-  const failedLoginsSeverity = insights.failedLoginsLast24h > 50 ? 'high' : insights.failedLoginsLast24h > 10 ? 'medium' : 'low';
-  const neverLoggedInSeverity = insights.usersNeverLoggedIn > 20 ? 'high' : insights.usersNeverLoggedIn > 5 ? 'medium' : 'low';
-  const inactiveUsersSeverity = insights.usersWithoutRecentLogin > 50 ? 'high' : insights.usersWithoutRecentLogin > 20 ? 'medium' : 'low';
+  // Use displayInsights from here
+  const currentInsights = displayInsights!;
+  const failedLoginsSeverity = currentInsights.failedLoginsLast24h > 50 ? 'high' : currentInsights.failedLoginsLast24h > 10 ? 'medium' : 'low';
+  const neverLoggedInSeverity = currentInsights.usersNeverLoggedIn > 20 ? 'high' : currentInsights.usersNeverLoggedIn > 5 ? 'medium' : 'low';
+  const inactiveUsersSeverity = currentInsights.usersWithoutRecentLogin > 50 ? 'high' : currentInsights.usersWithoutRecentLogin > 20 ? 'medium' : 'low';
 
   return (
     <div className="h-full p-4 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] flex flex-col">
       <div className="flex items-center justify-between mb-4">
-        <span className="text-xs text-[hsl(var(--muted-foreground))]">// security.health()</span>
+        <span className="text-xs text-[hsl(var(--muted-foreground))]">
+          {showDemoIndicator && (
+            <span className="mr-1 px-1.5 py-0.5 rounded text-[10px] bg-[hsl(var(--warning)/0.2)] text-[hsl(var(--warning))]">demo</span>
+          )}
+          // security.health()
+        </span>
         <div className="flex items-center gap-1.5">
           <Shield className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
           <span className="text-xs text-[hsl(var(--muted-foreground))]">last 24h</span>
@@ -115,7 +131,7 @@ export function SecurityHealth() {
       <div className="flex-1 space-y-3 overflow-y-auto">
         <SecurityMetric
           label="failed_logins"
-          value={insights.failedLoginsLast24h}
+          value={currentInsights.failedLoginsLast24h}
           icon={<AlertTriangle className="w-3.5 h-3.5" />}
           severity={failedLoginsSeverity}
           description="Failed login attempts in last 24 hours"
@@ -123,7 +139,7 @@ export function SecurityHealth() {
 
         <SecurityMetric
           label="never_logged_in"
-          value={insights.usersNeverLoggedIn}
+          value={currentInsights.usersNeverLoggedIn}
           icon={<UserX className="w-3.5 h-3.5" />}
           severity={neverLoggedInSeverity}
           description="Active users who have never logged in"
@@ -131,7 +147,7 @@ export function SecurityHealth() {
 
         <SecurityMetric
           label="inactive_30d"
-          value={insights.usersWithoutRecentLogin}
+          value={currentInsights.usersWithoutRecentLogin}
           icon={<UserX className="w-3.5 h-3.5" />}
           severity={inactiveUsersSeverity}
           description="Users without login in 30 days"
@@ -139,20 +155,20 @@ export function SecurityHealth() {
 
         <SecurityMetric
           label="unique_ips"
-          value={insights.uniqueIpsLast24h}
+          value={currentInsights.uniqueIpsLast24h}
           icon={<Globe className="w-3.5 h-3.5" />}
           severity="low"
           description="Unique IP addresses in last 24 hours"
         />
 
-        {insights.suspiciousIps.length > 0 && (
+        {currentInsights.suspiciousIps.length > 0 && (
           <div className="p-3 rounded border border-[hsl(var(--destructive)/0.3)] bg-[hsl(var(--destructive)/0.05)]">
             <div className="flex items-center gap-2 mb-2">
               <AlertTriangle className="w-3.5 h-3.5 text-[hsl(var(--destructive))]" />
               <span className="text-xs text-[hsl(var(--destructive))] uppercase tracking-wide">suspicious_ips</span>
             </div>
             <div className="space-y-1">
-              {insights.suspiciousIps.slice(0, 3).map((ip) => (
+              {currentInsights.suspiciousIps.slice(0, 3).map((ip) => (
                 <div key={ip.ip} className="flex items-center justify-between text-[10px]">
                   <span className="text-[hsl(var(--foreground))] font-mono">{ip.ip}</span>
                   <span className="text-[hsl(var(--destructive))]">{ip.failCount} failed</span>

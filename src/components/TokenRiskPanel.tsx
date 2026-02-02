@@ -1,7 +1,9 @@
 import { useEffect, useState, useRef } from 'react';
 import { Key, Loader2, RefreshCw, ChevronLeft, ChevronRight, Download, ChevronDown, ChevronUp, UserX } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useDemoMode } from '../context/DemoModeContext';
 import { fetchTokenRiskData, exportToCSV, type AppTokenRisk } from '../services/api';
+import { mockTokenRisk } from '../data/mockData';
 
 const ITEMS_PER_PAGE = 8;
 
@@ -40,12 +42,16 @@ function formatDate(dateString: string | null): string {
 
 export function TokenRiskPanel() {
   const { isAuthenticated, refreshKey } = useAuth();
+  const { isDemoMode } = useDemoMode();
   const [apps, setApps] = useState<AppTokenRisk[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [expandedApp, setExpandedApp] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const showDemoIndicator = isDemoMode && !isAuthenticated;
+  const displayApps = showDemoIndicator ? (mockTokenRisk as AppTokenRisk[]) : apps;
 
   const loadData = () => {
     if (!isAuthenticated) return;
@@ -96,7 +102,7 @@ export function TokenRiskPanel() {
     ]);
   };
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !isDemoMode) {
     return (
       <div className="h-full p-4 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] flex flex-col">
         <div className="flex items-center justify-between mb-3">
@@ -109,7 +115,7 @@ export function TokenRiskPanel() {
     );
   }
 
-  if (error) {
+  if (error && !showDemoIndicator) {
     return (
       <div className="h-full p-4 rounded-md border border-[hsl(var(--destructive)/0.5)] bg-[hsl(var(--destructive)/0.1)] flex flex-col items-center justify-center">
         <span className="text-xs text-[hsl(var(--destructive))]">{error}</span>
@@ -117,19 +123,20 @@ export function TokenRiskPanel() {
     );
   }
 
-  const totalPages = Math.ceil(apps.length / ITEMS_PER_PAGE);
-  const paginatedApps = apps.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(displayApps.length / ITEMS_PER_PAGE);
+  const paginatedApps = displayApps.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
 
   // Calculate summary stats
-  const criticalCount = apps.filter(a => a.riskLevel === 'critical').length;
-  const highCount = apps.filter(a => a.riskLevel === 'high').length;
-  const totalInactiveTokens = apps.reduce((sum, a) => sum + a.inactiveUserTokens, 0);
+  const criticalCount = displayApps.filter(a => a.riskLevel === 'critical').length;
+  const highCount = displayApps.filter(a => a.riskLevel === 'high').length;
+  const totalInactiveTokens = displayApps.reduce((sum, a) => sum + a.inactiveUserTokens, 0);
 
   return (
     <div className="h-full p-4 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] flex flex-col">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Key className="w-3.5 h-3.5 text-[hsl(var(--warning))]" />
+          {showDemoIndicator && <span className="mr-1 px-1.5 py-0.5 rounded text-[10px] bg-[hsl(var(--warning)/0.2)] text-[hsl(var(--warning))]">demo</span>}
           <span className="text-xs text-[hsl(var(--muted-foreground))]">// oauth_token_risk[]</span>
         </div>
         <div className="flex items-center gap-2">
@@ -150,7 +157,7 @@ export function TokenRiskPanel() {
             </span>
           )}
           <span className="text-xs text-[hsl(var(--muted-foreground))] tabular-nums">
-            {isLoading ? <Loader2 className="w-3 h-3 animate-spin inline" /> : `${apps.length} apps`}
+            {isLoading ? <Loader2 className="w-3 h-3 animate-spin inline" /> : `${displayApps.length} apps`}
           </span>
           <button
             onClick={handleExport}
@@ -171,11 +178,11 @@ export function TokenRiskPanel() {
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-auto -mx-4 px-4">
-        {isLoading && apps.length === 0 ? (
+        {isLoading && displayApps.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-5 h-5 animate-spin text-[hsl(var(--muted-foreground))]" />
           </div>
-        ) : apps.length === 0 ? (
+        ) : displayApps.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <span className="text-xs text-[hsl(var(--muted-foreground))]">no oauth tokens found</span>
           </div>
@@ -292,7 +299,7 @@ export function TokenRiskPanel() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between pt-3 mt-3 border-t border-[hsl(var(--border))]">
           <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
-            {currentPage * ITEMS_PER_PAGE + 1}-{Math.min((currentPage + 1) * ITEMS_PER_PAGE, apps.length)} of {apps.length}
+            {currentPage * ITEMS_PER_PAGE + 1}-{Math.min((currentPage + 1) * ITEMS_PER_PAGE, displayApps.length)} of {displayApps.length}
           </span>
           <div className="flex items-center gap-1">
             <button

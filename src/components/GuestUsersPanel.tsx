@@ -1,7 +1,9 @@
 import { useEffect, useState, useRef } from 'react';
 import { UserCog, Loader2, RefreshCw, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useDemoMode } from '../context/DemoModeContext';
 import { fetchDataAccessData, type GuestUserInfo } from '../services/api';
+import { mockGuestUsers } from '../data/mockData';
 import { getSalesforceUserUrl } from '../utils/salesforceLinks';
 
 const ITEMS_PER_PAGE = 10;
@@ -13,11 +15,15 @@ function formatDate(dateString: string | null): string {
 
 export function GuestUsersPanel() {
   const { isAuthenticated, instanceUrl, refreshKey } = useAuth();
+  const { isDemoMode } = useDemoMode();
   const [users, setUsers] = useState<GuestUserInfo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const showDemoIndicator = isDemoMode && !isAuthenticated;
+  const displayUsers = showDemoIndicator ? (mockGuestUsers as GuestUserInfo[]) : users;
 
   const loadData = () => {
     if (!isAuthenticated) return;
@@ -41,7 +47,7 @@ export function GuestUsersPanel() {
     loadData();
   }, [isAuthenticated, refreshKey]);
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !isDemoMode) {
     return (
       <div className="h-full p-4 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] flex flex-col">
         <div className="flex items-center justify-between mb-3">
@@ -54,7 +60,7 @@ export function GuestUsersPanel() {
     );
   }
 
-  if (error) {
+  if (error && !showDemoIndicator) {
     return (
       <div className="h-full p-4 rounded-md border border-[hsl(var(--destructive)/0.5)] bg-[hsl(var(--destructive)/0.1)] flex flex-col items-center justify-center">
         <span className="text-xs text-[hsl(var(--destructive))]">{error}</span>
@@ -62,21 +68,22 @@ export function GuestUsersPanel() {
     );
   }
 
-  const activeUsers = users.filter(u => u.isActive);
+  const activeUsers = displayUsers.filter(u => u.isActive);
 
-  const totalPages = Math.ceil(users.length / ITEMS_PER_PAGE);
-  const paginatedUsers = users.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(displayUsers.length / ITEMS_PER_PAGE);
+  const paginatedUsers = displayUsers.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
 
   return (
     <div className="h-full p-4 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] flex flex-col">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <UserCog className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
+          {showDemoIndicator && <span className="mr-1 px-1.5 py-0.5 rounded text-[10px] bg-[hsl(var(--warning)/0.2)] text-[hsl(var(--warning))]">demo</span>}
           <span className="text-xs text-[hsl(var(--muted-foreground))]">// guest_users[]</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-[hsl(var(--muted-foreground))] tabular-nums">
-            {isLoading ? <Loader2 className="w-3 h-3 animate-spin inline" /> : `${users.length} users`}
+            {isLoading ? <Loader2 className="w-3 h-3 animate-spin inline" /> : `${displayUsers.length} users`}
           </span>
           <button
             onClick={loadData}
@@ -89,11 +96,11 @@ export function GuestUsersPanel() {
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-auto -mx-4 px-4">
-        {isLoading && users.length === 0 ? (
+        {isLoading && displayUsers.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-5 h-5 animate-spin text-[hsl(var(--muted-foreground))]" />
           </div>
-        ) : users.length === 0 ? (
+        ) : displayUsers.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <span className="text-xs text-[hsl(var(--success))]">no guest/external users found</span>
           </div>
@@ -156,7 +163,7 @@ export function GuestUsersPanel() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between pt-3 mt-3 border-t border-[hsl(var(--border))]">
           <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
-            {currentPage * ITEMS_PER_PAGE + 1}-{Math.min((currentPage + 1) * ITEMS_PER_PAGE, users.length)} of {users.length}
+            {currentPage * ITEMS_PER_PAGE + 1}-{Math.min((currentPage + 1) * ITEMS_PER_PAGE, displayUsers.length)} of {displayUsers.length}
           </span>
           <div className="flex items-center gap-1">
             <button

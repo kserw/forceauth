@@ -28,24 +28,39 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const isBrowser = typeof window !== 'undefined';
+
+function getStoredEnvironment(): SalesforceEnvironment {
+  if (!isBrowser) return 'sandbox';
+  const stored = localStorage.getItem('sf_environment');
+  return stored === 'production' || stored === 'sandbox' ? stored : 'sandbox';
+}
+
+function getStoredOrgId(): string | null {
+  if (!isBrowser) return null;
+  return localStorage.getItem('sf_selected_org_id');
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [user, setUser] = useState<UserInfo | null>(null);
-  const [environment, setEnvironmentState] = useState<SalesforceEnvironment>(() => {
-    const stored = localStorage.getItem('sf_environment');
-    return stored === 'production' || stored === 'sandbox' ? stored : 'sandbox';
-  });
+  const [environment, setEnvironmentState] = useState<SalesforceEnvironment>('sandbox');
   const [instanceUrl, setInstanceUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [selectedOrgId, setSelectedOrgIdState] = useState<string | null>(() => {
-    return localStorage.getItem('sf_selected_org_id');
-  });
+  const [selectedOrgId, setSelectedOrgIdState] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Initialize from localStorage on mount
+  useEffect(() => {
+    setEnvironmentState(getStoredEnvironment());
+    setSelectedOrgIdState(getStoredOrgId());
+  }, []);
 
   // Check for error in URL params (from OAuth callback fallback)
   useEffect(() => {
+    if (!isBrowser) return;
     const params = new URLSearchParams(window.location.search);
     const urlError = params.get('error');
     if (urlError) {
@@ -65,12 +80,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setInstanceUrl(status.instanceUrl || null);
         if (status.environment) {
           setEnvironmentState(status.environment);
-          localStorage.setItem('sf_environment', status.environment);
+          if (isBrowser) {
+            localStorage.setItem('sf_environment', status.environment);
+          }
         }
         // Set the selected org from the session
         if (status.orgCredentialsId) {
           setSelectedOrgIdState(status.orgCredentialsId);
-          localStorage.setItem('sf_selected_org_id', status.orgCredentialsId);
+          if (isBrowser) {
+            localStorage.setItem('sf_selected_org_id', status.orgCredentialsId);
+          }
         }
       }
       return status.authenticated;
@@ -87,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [fetchAuthStatus]);
 
   const login = useCallback(async (overrideOrgId?: string) => {
-    if (isLoggingIn) return;
+    if (isLoggingIn || !isBrowser) return;
 
     setIsLoggingIn(true);
     setError(null);
@@ -145,17 +164,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const setEnvironment = useCallback((env: SalesforceEnvironment) => {
     if (!isAuthenticated) {
       setEnvironmentState(env);
-      localStorage.setItem('sf_environment', env);
+      if (isBrowser) {
+        localStorage.setItem('sf_environment', env);
+      }
     }
   }, [isAuthenticated]);
 
   const setSelectedOrgId = useCallback((orgId: string | null) => {
     if (!isAuthenticated) {
       setSelectedOrgIdState(orgId);
-      if (orgId) {
-        localStorage.setItem('sf_selected_org_id', orgId);
-      } else {
-        localStorage.removeItem('sf_selected_org_id');
+      if (isBrowser) {
+        if (orgId) {
+          localStorage.setItem('sf_selected_org_id', orgId);
+        } else {
+          localStorage.removeItem('sf_selected_org_id');
+        }
       }
     }
   }, [isAuthenticated]);

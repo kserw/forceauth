@@ -1,8 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
 import { Monitor, Smartphone, Globe, Loader2, RefreshCw, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useDemoMode } from '../context/DemoModeContext';
 import { fetchActiveSessions, exportToCSV, type ActiveSession } from '../services/api';
 import { getSalesforceUserUrl } from '../utils/salesforceLinks';
+import { mockActiveSessions } from '../data/mockData';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -46,11 +48,14 @@ function getSessionTypeLabel(sessionType: string): string {
 
 export function ActiveSessions() {
   const { isAuthenticated, instanceUrl, refreshKey } = useAuth();
+  const { isDemoMode } = useDemoMode();
   const [sessions, setSessions] = useState<ActiveSession[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const showDemoIndicator = isDemoMode && !isAuthenticated;
 
   const loadSessions = () => {
     if (!isAuthenticated) return;
@@ -74,7 +79,9 @@ export function ActiveSessions() {
     loadSessions();
   }, [isAuthenticated, refreshKey]);
 
-  if (!isAuthenticated) {
+  const displaySessions = showDemoIndicator ? mockActiveSessions as ActiveSession[] : sessions;
+
+  if (!isAuthenticated && !isDemoMode) {
     return (
       <div className="h-full p-4 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] flex flex-col">
         <div className="flex items-center justify-between mb-3">
@@ -87,7 +94,7 @@ export function ActiveSessions() {
     );
   }
 
-  if (error) {
+  if (error && !showDemoIndicator) {
     return (
       <div className="h-full p-4 rounded-md border border-[hsl(var(--destructive)/0.5)] bg-[hsl(var(--destructive)/0.1)] flex flex-col items-center justify-center">
         <span className="text-xs text-[hsl(var(--destructive))]">{error}</span>
@@ -95,11 +102,11 @@ export function ActiveSessions() {
     );
   }
 
-  const totalPages = Math.ceil(sessions.length / ITEMS_PER_PAGE);
-  const paginatedSessions = sessions.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(displaySessions.length / ITEMS_PER_PAGE);
+  const paginatedSessions = displaySessions.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
 
   const handleExport = () => {
-    exportToCSV(sessions, 'active_sessions', [
+    exportToCSV(displaySessions, 'active_sessions', [
       { key: 'userName', header: 'User' },
       { key: 'userUsername', header: 'Username' },
       { key: 'sessionType', header: 'Session Type' },
@@ -114,10 +121,13 @@ export function ActiveSessions() {
   return (
     <div className="h-full p-4 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] flex flex-col">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs text-[hsl(var(--muted-foreground))]">// active_sessions[]</span>
+        <span className="text-xs text-[hsl(var(--muted-foreground))]">
+          {showDemoIndicator && <span className="mr-1 px-1.5 py-0.5 rounded text-[10px] bg-[hsl(var(--warning)/0.2)] text-[hsl(var(--warning))]">demo</span>}
+          // active_sessions[]
+        </span>
         <div className="flex items-center gap-2">
           <span className="text-xs text-[hsl(var(--muted-foreground))] tabular-nums">
-            {isLoading ? <Loader2 className="w-3 h-3 animate-spin inline" /> : `${sessions.length} active`}
+            {isLoading && !showDemoIndicator ? <Loader2 className="w-3 h-3 animate-spin inline" /> : `${displaySessions.length} active`}
           </span>
           <button
             onClick={handleExport}
@@ -138,18 +148,18 @@ export function ActiveSessions() {
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-auto -mx-4 px-4">
-        {isLoading && sessions.length === 0 ? (
+        {isLoading && displaySessions.length === 0 && !showDemoIndicator ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-5 h-5 animate-spin text-[hsl(var(--muted-foreground))]" />
           </div>
-        ) : sessions.length === 0 ? (
+        ) : displaySessions.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <span className="text-xs text-[hsl(var(--muted-foreground))]">no active sessions</span>
           </div>
         ) : (
           <div className="space-y-1">
             {paginatedSessions.map((session) => {
-              const userUrl = getSalesforceUserUrl(instanceUrl, session.userId);
+              const userUrl = showDemoIndicator ? null : getSalesforceUserUrl(instanceUrl, session.userId);
               return (
                 <div
                   key={session.id}
@@ -192,7 +202,7 @@ export function ActiveSessions() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between pt-3 mt-3 border-t border-[hsl(var(--border))]">
           <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
-            {currentPage * ITEMS_PER_PAGE + 1}-{Math.min((currentPage + 1) * ITEMS_PER_PAGE, sessions.length)} of {sessions.length}
+            {currentPage * ITEMS_PER_PAGE + 1}-{Math.min((currentPage + 1) * ITEMS_PER_PAGE, displaySessions.length)} of {displaySessions.length}
           </span>
           <div className="flex items-center gap-1">
             <button

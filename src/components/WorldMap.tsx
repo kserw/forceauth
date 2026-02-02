@@ -5,7 +5,9 @@ import * as topojson from 'topojson-client';
 import type { Topology, GeometryCollection } from 'topojson-specification';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { useDemoMode } from '../context/DemoModeContext';
 import { fetchLoginsByCountry, type CountryStat } from '../services/api';
+import { mockCountryStats } from '../data/mockData';
 
 // Empty country data for non-authenticated state
 const emptyCountryUsers: Record<string, number> = {};
@@ -78,10 +80,14 @@ const idToCode: Record<string, string> = {
 export function WorldMap() {
   const { theme } = useTheme();
   const { isAuthenticated } = useAuth();
+  const { isDemoMode } = useDemoMode();
   const isDark = theme === 'dark';
   const [countries, setCountries] = useState<CountryFeature[]>([]);
   const [loginData, setLoginData] = useState<CountryStat[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Use mock data in demo mode
+  const showDemoIndicator = isDemoMode && !isAuthenticated;
 
   useEffect(() => {
     import('world-atlas/countries-110m.json').then((worldData) => {
@@ -115,21 +121,24 @@ export function WorldMap() {
     return geoPath(projection);
   }, []);
 
+  // Use mock data in demo mode
+  const displayLoginData = showDemoIndicator ? mockCountryStats : loginData;
+
   // Convert login data to country code map
   const countryData = useMemo(() => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated && !isDemoMode) {
       return emptyCountryUsers;
     }
-    if (loginData.length === 0) {
+    if (displayLoginData.length === 0) {
       return emptyCountryUsers;
     }
     const data: Record<string, number> = {};
-    for (const stat of loginData) {
+    for (const stat of displayLoginData) {
       const code3 = iso2to3[stat.country] || stat.country;
       data[code3] = stat.count;
     }
     return data;
-  }, [isAuthenticated, loginData]);
+  }, [isAuthenticated, isDemoMode, displayLoginData]);
 
   const totalLogins = useMemo(() => {
     return Object.values(countryData).reduce((sum, count) => sum + count, 0);
@@ -145,9 +154,12 @@ export function WorldMap() {
     <div className="h-full p-4 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] flex flex-col">
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs text-[hsl(var(--muted-foreground))]">
+          {showDemoIndicator && (
+            <span className="mr-1 px-1.5 py-0.5 rounded text-[10px] bg-[hsl(var(--warning)/0.2)] text-[hsl(var(--warning))]">demo</span>
+          )}
           // login_geography()
         </span>
-        {isLoading ? (
+        {isLoading && !showDemoIndicator ? (
           <Loader2 className="w-3 h-3 animate-spin text-[hsl(var(--muted-foreground))]" />
         ) : (
           <div className="flex items-center gap-1 text-xs text-[hsl(var(--info))]">

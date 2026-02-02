@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { ArrowUpRight, Loader2, Download } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTab } from '../context/TabContext';
+import { useDemoMode } from '../context/DemoModeContext';
 import { fetchUsers, exportToCSV, type SalesforceUser } from '../services/api';
 import { getSalesforceUserUrl } from '../utils/salesforceLinks';
+import { mockUsers } from '../data/mockData';
 
 function formatTimeAgo(dateString: string | null): string {
   if (!dateString) return 'never';
@@ -33,6 +35,7 @@ function getAvatarColor(name: string): string {
 export function RecentUsers() {
   const { isAuthenticated, instanceUrl } = useAuth();
   const { setActiveTab } = useTab();
+  const { isDemoMode } = useDemoMode();
   const [users, setUsers] = useState<SalesforceUser[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,8 +58,12 @@ export function RecentUsers() {
       .finally(() => setIsLoading(false));
   }, [isAuthenticated]);
 
-  // Show empty state when not authenticated
-  if (!isAuthenticated) {
+  // Use mock data in demo mode
+  const showDemoIndicator = isDemoMode && !isAuthenticated;
+  const displayUsers = showDemoIndicator ? mockUsers : users;
+
+  // Show empty state when not authenticated and not in demo mode
+  if (!isAuthenticated && !isDemoMode) {
     return (
       <div className="h-full p-3 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] flex flex-col">
         <div className="flex items-center justify-between mb-2">
@@ -78,7 +85,7 @@ export function RecentUsers() {
   }
 
   const handleExport = () => {
-    exportToCSV(users, 'users', [
+    exportToCSV(displayUsers, 'users', [
       { key: 'name', header: 'Name' },
       { key: 'username', header: 'Username' },
       { key: 'email', header: 'Email' },
@@ -92,14 +99,19 @@ export function RecentUsers() {
   return (
     <div className="h-full p-3 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] flex flex-col">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs text-[hsl(var(--muted-foreground))]">// recent_users[]</span>
+        <span className="text-xs text-[hsl(var(--muted-foreground))]">
+          {showDemoIndicator && (
+            <span className="mr-1 px-1.5 py-0.5 rounded text-[10px] bg-[hsl(var(--warning)/0.2)] text-[hsl(var(--warning))]">demo</span>
+          )}
+          // recent_users[]
+        </span>
         <div className="flex items-center gap-2">
           <span className="text-xs text-[hsl(var(--muted-foreground))] tabular-nums">
-            {isLoading ? <Loader2 className="w-3 h-3 animate-spin inline" /> : `${users.length} entries`}
+            {isLoading && !showDemoIndicator ? <Loader2 className="w-3 h-3 animate-spin inline" /> : `${displayUsers.length} entries`}
           </span>
           <button
             onClick={handleExport}
-            disabled={isLoading || users.length === 0}
+            disabled={(isLoading && !showDemoIndicator) || displayUsers.length === 0}
             className="p-1 rounded hover:bg-[hsl(var(--muted))] transition-colors disabled:opacity-50"
             title="Export to CSV"
           >
@@ -109,14 +121,14 @@ export function RecentUsers() {
       </div>
 
       <div className="flex-1 overflow-auto -mx-3 px-3">
-        {isLoading ? (
+        {isLoading && !showDemoIndicator ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-5 h-5 animate-spin text-[hsl(var(--muted-foreground))]" />
           </div>
         ) : (
           <div className="space-y-1">
-            {users.map((user) => {
-              const userUrl = getSalesforceUserUrl(instanceUrl, user.id);
+            {displayUsers.map((user) => {
+              const userUrl = showDemoIndicator ? null : getSalesforceUserUrl(instanceUrl, user.id);
               return (
                 <div
                   key={user.id}
