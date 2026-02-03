@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
-import { Loader2, AlertTriangle, CheckCircle, Gauge } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+import { Loader2, AlertTriangle, CheckCircle, Gauge, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useDemoMode } from '../context/DemoModeContext';
 import { fetchOrgLimits, type OrgLimit } from '../services/api';
 import { mockOrgLimits } from '../data/mockData';
+
+const ITEMS_PER_PAGE = 10;
 
 interface LimitBarProps {
   name: string;
@@ -53,31 +55,41 @@ function LimitBar({ name, limit }: LimitBarProps) {
 }
 
 export function OrgLimitsPanel() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, refreshKey } = useAuth();
   const { isDemoMode } = useDemoMode();
   const [limits, setLimits] = useState<Record<string, OrgLimit> | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const showDemoIndicator = isDemoMode && !isAuthenticated;
+
+  const loadData = () => {
+    if (!isAuthenticated) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    fetchOrgLimits()
+      .then(data => {
+        setLimits(data);
+        setCurrentPage(0);
+      })
+      .catch((err) => {
+        console.error('Failed to fetch limits:', err);
+        setError(err.message);
+      })
+      .finally(() => setIsLoading(false));
+  };
 
   useEffect(() => {
     if (!isAuthenticated) {
       setLimits(null);
       return;
     }
-
-    setIsLoading(true);
-    setError(null);
-
-    fetchOrgLimits()
-      .then(setLimits)
-      .catch((err) => {
-        console.error('Failed to fetch limits:', err);
-        setError(err.message);
-      })
-      .finally(() => setIsLoading(false));
-  }, [isAuthenticated]);
+    loadData();
+  }, [isAuthenticated, refreshKey]);
 
   const displayLimits = showDemoIndicator ? mockOrgLimits : limits;
 
@@ -125,6 +137,12 @@ export function OrgLimitsPanel() {
     return pct < 70;
   });
 
+  const totalPages = Math.ceil(healthyLimits.length / ITEMS_PER_PAGE);
+  const paginatedHealthyLimits = healthyLimits.slice(
+    currentPage * ITEMS_PER_PAGE,
+    (currentPage + 1) * ITEMS_PER_PAGE
+  );
+
   return (
     <div className="h-full p-4 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--card))] flex flex-col">
       <div className="flex items-center justify-between mb-4">
@@ -144,10 +162,17 @@ export function OrgLimitsPanel() {
               <span className="text-[10px]">healthy</span>
             </div>
           )}
+          <button
+            onClick={loadData}
+            disabled={isLoading}
+            className="p-1 rounded hover:bg-[hsl(var(--muted))] transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3 h-3 text-[hsl(var(--muted-foreground))] ${isLoading ? 'animate-spin' : ''}`} />
+          </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto -mx-2 space-y-1">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto -mx-2 space-y-1">
         {criticalLimits.length > 0 && (
           <div className="mb-3">
             <div className="flex items-center gap-1.5 px-2 mb-2">
@@ -164,14 +189,41 @@ export function OrgLimitsPanel() {
           <div>
             <div className="flex items-center gap-1.5 px-2 mb-2">
               <Gauge className="w-3 h-3 text-[hsl(var(--muted-foreground))]" />
-              <span className="text-[10px] text-[hsl(var(--muted-foreground))] uppercase tracking-wide">all limits</span>
+              <span className="text-[10px] text-[hsl(var(--muted-foreground))] uppercase tracking-wide">all limits ({healthyLimits.length})</span>
             </div>
-            {healthyLimits.map(([name, limit]) => (
+            {paginatedHealthyLimits.map(([name, limit]) => (
               <LimitBar key={name} name={name} limit={limit} />
             ))}
           </div>
         )}
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-3 mt-3 border-t border-[hsl(var(--border))]">
+          <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
+            {currentPage * ITEMS_PER_PAGE + 1}-{Math.min((currentPage + 1) * ITEMS_PER_PAGE, healthyLimits.length)} of {healthyLimits.length}
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => { setCurrentPage(p => Math.max(0, p - 1)); scrollRef.current?.scrollTo(0, 0); }}
+              disabled={currentPage === 0}
+              className="p-1 rounded hover:bg-[hsl(var(--muted))] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
+            </button>
+            <span className="text-[10px] text-[hsl(var(--muted-foreground))] tabular-nums px-2">
+              {currentPage + 1} / {totalPages}
+            </span>
+            <button
+              onClick={() => { setCurrentPage(p => Math.min(totalPages - 1, p + 1)); scrollRef.current?.scrollTo(0, 0); }}
+              disabled={currentPage === totalPages - 1}
+              className="p-1 rounded hover:bg-[hsl(var(--muted))] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ChevronRight className="w-3.5 h-3.5 text-[hsl(var(--muted-foreground))]" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
