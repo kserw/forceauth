@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ChevronDown, LogIn, LogOut, Plus, Trash2, Terminal } from 'lucide-react';
+import { ChevronDown, LogIn, LogOut, Plus, X, Terminal } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useDemoMode } from '../context/DemoModeContext';
 import { getStoredOrgCredentials, clearStoredOrgCredentials, type StoredOrgCredentials } from '../services/api';
@@ -40,7 +40,8 @@ export function OrgDropdown({ onAddEnvironment }: OrgDropdownProps) {
     }
   }, [isOpen]);
 
-  const handleDelete = async () => {
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!confirm('Remove saved credentials? You will be logged out.')) return;
 
     clearStoredOrgCredentials();
@@ -89,31 +90,37 @@ export function OrgDropdown({ onAddEnvironment }: OrgDropdownProps) {
 
       {isOpen && (
         <div className="absolute top-full right-0 mt-1 z-50 min-w-[200px] rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))] shadow-lg overflow-hidden">
-          {/* Header */}
-          <div className="px-3 py-2 border-b border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.3)]">
-            <span className="text-xs text-[hsl(var(--muted-foreground))]">// org.status()</span>
-          </div>
-
-          {/* Current org info */}
+          {/* Current org info with delete button */}
           {storedCredentials && (
-            <div className="px-3 py-2 border-b border-[hsl(var(--border))]">
-              <div className="text-xs text-[hsl(var(--foreground))]">
-                {storedCredentials.orgName?.toLowerCase() || 'unnamed_org'}
-              </div>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
-                  {storedCredentials.environment}
-                </span>
-                {isAuthenticated && (
-                  <span className="text-[10px] text-[hsl(var(--success))]">• connected</span>
-                )}
+            <div className="px-3 py-2.5 border-b border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.3)]">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-xs text-[hsl(var(--foreground))]">
+                    {storedCredentials.orgName?.toLowerCase() || 'unnamed_org'}
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-[10px] text-[hsl(var(--muted-foreground))]">
+                      {storedCredentials.environment}
+                    </span>
+                    {isAuthenticated && (
+                      <span className="text-[10px] text-[hsl(var(--success))]">• connected</span>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={handleDelete}
+                  className="p-1 rounded hover:bg-[hsl(var(--destructive)/0.1)] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
+                  title="Remove credentials"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
           )}
 
           {/* Actions */}
           <div className="py-1">
-            {storedCredentials ? (
+            {storedCredentials && (
               <>
                 {isAuthenticated ? (
                   <button
@@ -121,7 +128,7 @@ export function OrgDropdown({ onAddEnvironment }: OrgDropdownProps) {
                     className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--foreground))]"
                   >
                     <LogOut className="w-3 h-3" />
-                    logout()
+                    logout
                   </button>
                 ) : (
                   <button
@@ -129,20 +136,13 @@ export function OrgDropdown({ onAddEnvironment }: OrgDropdownProps) {
                     className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[hsl(var(--success))] hover:bg-[hsl(var(--success)/0.1)]"
                   >
                     <LogIn className="w-3 h-3" />
-                    login()
+                    login
                   </button>
                 )}
-                <button
-                  onClick={handleDelete}
-                  className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive)/0.1)]"
-                >
-                  <Trash2 className="w-3 h-3" />
-                  remove()
-                </button>
               </>
-            ) : null}
+            )}
 
-            <div className="border-t border-[hsl(var(--border))] mt-1 pt-1">
+            <div className={storedCredentials ? "border-t border-[hsl(var(--border))] mt-1 pt-1" : ""}>
               <button
                 onClick={() => {
                   setIsOpen(false);
@@ -151,7 +151,7 @@ export function OrgDropdown({ onAddEnvironment }: OrgDropdownProps) {
                 className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[hsl(var(--info))] hover:bg-[hsl(var(--info)/0.1)]"
               >
                 <Plus className="w-3 h-3" />
-                {storedCredentials ? 'add_env()' : 'connect_org()'}
+                {storedCredentials ? 'add_env' : 'connect_org'}
               </button>
             </div>
           </div>

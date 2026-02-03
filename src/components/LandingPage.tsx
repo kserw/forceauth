@@ -8,8 +8,8 @@ export function LandingPage() {
       <Header />
 
       {/* Main content */}
-      <main className="flex-1 flex flex-col items-center justify-center px-6 py-12">
-        <div className="max-w-2xl w-full space-y-12">
+      <main className="flex-1 flex flex-col items-center justify-center px-6 py-6">
+        <div className="max-w-2xl w-full space-y-8">
           {/* Hero */}
           <div className="text-center space-y-4">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[hsl(var(--muted))] text-xs text-[hsl(var(--muted-foreground))]">
@@ -53,7 +53,7 @@ export function LandingPage() {
               href="/dashboard"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-md bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-sm font-medium hover:opacity-90 transition-opacity"
             >
-              connect_org()
+              connect_org
               <ChevronRight className="w-4 h-4" />
             </Link>
             <p className="mt-3 text-[10px] text-[hsl(var(--muted-foreground))]">
@@ -63,7 +63,7 @@ export function LandingPage() {
               href="/setup"
               className="mt-2 inline-block text-xs text-[hsl(var(--info))] hover:underline"
             >
-              setup_guide()
+              setup_guide
             </Link>
           </div>
         </div>

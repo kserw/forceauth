@@ -91,7 +91,7 @@ export function ConnectOrgModal({ isOpen, onClose }: ConnectOrgModalProps) {
         <div className="flex items-center justify-between px-4 py-3 border-b border-[hsl(var(--border))]">
           <div className="flex items-center gap-2">
             <Terminal className="w-4 h-4 text-[hsl(var(--info))]" />
-            <span className="text-sm text-[hsl(var(--muted-foreground))]">// connect_org()</span>
+            <span className="text-sm text-[hsl(var(--muted-foreground))]">// connect_org</span>
           </div>
           <button
             onClick={onClose}
@@ -173,7 +173,7 @@ export function ConnectOrgModal({ isOpen, onClose }: ConnectOrgModalProps) {
               onClick={onClose}
               className="flex-1 px-3 py-2 text-xs rounded border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted)/0.5)] transition-colors"
             >
-              cancel()
+              cancel
             </button>
             <button
               type="submit"
@@ -183,10 +183,10 @@ export function ConnectOrgModal({ isOpen, onClose }: ConnectOrgModalProps) {
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-3 h-3 animate-spin" />
-                  connecting...
+                  connecting
                 </>
               ) : (
-                'connect()'
+                'connect'
               )}
             </button>
           </div>
@@ -199,7 +199,7 @@ export function ConnectOrgModal({ isOpen, onClose }: ConnectOrgModalProps) {
             onClick={onClose}
             className="text-xs text-[hsl(var(--info))] hover:underline"
           >
-            // setup_guide() →
+            // setup_guide →
           </Link>
         </div>
       </div>
