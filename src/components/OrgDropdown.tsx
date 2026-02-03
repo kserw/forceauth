@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ChevronDown, LogIn, LogOut, Plus, X, Terminal } from 'lucide-react';
+import { ChevronDown, LogIn, LogOut, Plus, Trash2, Terminal } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useDemoMode } from '../context/DemoModeContext';
 import { getStoredOrgCredentials, clearStoredOrgCredentials, type StoredOrgCredentials } from '../services/api';
@@ -112,7 +112,7 @@ export function OrgDropdown({ onAddEnvironment }: OrgDropdownProps) {
                   className="p-1 rounded hover:bg-[hsl(var(--destructive)/0.1)] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
                   title="Remove credentials"
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <Trash2 className="w-3 h-3" />
                 </button>
               </div>
             </div>

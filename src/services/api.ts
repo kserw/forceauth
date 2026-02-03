@@ -193,7 +193,7 @@ export async function initiatePopupLogin(
       clientId: credentials.clientId,
       redirectUri: credentials.redirectUri,
       environment: environment || credentials.environment,
-      returnUrl: '/',
+      returnUrl: '/dashboard',
       popup: true,
     }),
   });
