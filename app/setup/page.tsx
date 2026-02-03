@@ -80,7 +80,7 @@ export default function SetupPage() {
               <h2 className="text-xl font-semibold">Enable OAuth Settings</h2>
             </div>
             <p className="text-[hsl(var(--muted-foreground))] mb-4">
-              Check <strong>"Enable OAuth Settings"</strong> and configure:
+              Check <strong>&quot;Enable OAuth Settings&quot;</strong> and configure:
             </p>
             <div className="space-y-3">
               <div className="bg-[hsl(var(--muted))] rounded-lg p-3">
@@ -139,7 +139,7 @@ export default function SetupPage() {
               <li>Click <strong>Continue</strong> on the confirmation dialog</li>
               <li>Wait 2-10 minutes for changes to propagate</li>
               <li>Go to <strong>App Manager</strong> → find your app → click dropdown → <strong>View</strong></li>
-              <li>Under "API (Enable OAuth Settings)", click <strong>Manage Consumer Details</strong></li>
+              <li>Under &quot;API (Enable OAuth Settings)&quot;, click <strong>Manage Consumer Details</strong></li>
               <li>Verify your identity, then copy the <strong>Consumer Key</strong></li>
             </ol>
           </div>
