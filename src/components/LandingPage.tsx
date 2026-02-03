@@ -1,8 +1,18 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import { Shield, Activity, Users, Globe, Lock, Terminal, ChevronRight } from 'lucide-react';
 import { Header } from './Header';
+import { getStoredOrgCredentials } from '../services/api';
 import Link from 'next/link';
 
 export function LandingPage() {
+  const [hasOrg, setHasOrg] = useState(false);
+
+  useEffect(() => {
+    setHasOrg(!!getStoredOrgCredentials());
+  }, []);
+
   return (
     <div className="min-h-screen bg-[hsl(var(--background))] flex flex-col">
       <Header />
@@ -53,18 +63,22 @@ export function LandingPage() {
               href="/dashboard"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-md bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-sm font-medium hover:opacity-90 transition-opacity"
             >
-              connect_org
+              {hasOrg ? 'go_to_dashboard' : 'connect_org'}
               <ChevronRight className="w-4 h-4" />
             </Link>
-            <p className="mt-3 text-[10px] text-[hsl(var(--muted-foreground))]">
-              requires a salesforce external client app with oauth credentials
-            </p>
-            <Link
-              href="/setup"
-              className="mt-2 inline-block text-xs text-[hsl(var(--info))] hover:underline"
-            >
-              setup_guide
-            </Link>
+            {!hasOrg && (
+              <>
+                <p className="mt-3 text-[10px] text-[hsl(var(--muted-foreground))]">
+                  requires a salesforce external client app with oauth credentials
+                </p>
+                <Link
+                  href="/setup"
+                  className="mt-2 inline-block text-xs text-[hsl(var(--info))] hover:underline"
+                >
+                  setup_guide
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </main>
