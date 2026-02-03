@@ -87,12 +87,12 @@ export function ActivityTicker() {
     ])
       .then(([auditEvents, logins, users]) => {
         const userMap = new Map<string, SalesforceUser>();
-        users.forEach(u => userMap.set(u.id, u));
+        (users || []).forEach(u => userMap.set(u.id, u));
 
         const items: ActivityItem[] = [];
 
         // Add audit events (filter out noise from integration users)
-        auditEvents.forEach(event => {
+        (auditEvents || []).forEach(event => {
           if (isFilteredUser(event.createdBy)) return;
 
           items.push({
@@ -107,7 +107,7 @@ export function ActivityTicker() {
 
         // Add important logins (human logins + all failed logins)
         const seenUserLogins = new Set<string>();
-        logins.forEach(login => {
+        (logins || []).forEach(login => {
           const user = userMap.get(login.userId);
           const userName = user?.name || 'Unknown';
 

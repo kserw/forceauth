@@ -51,7 +51,7 @@ export function RecentUsers() {
     setError(null);
 
     fetchUsers({ limit: 6 })
-      .then(setUsers)
+      .then(data => setUsers(data || []))
       .catch((err) => {
         console.error('Failed to fetch users:', err);
         setError(err.message);
@@ -137,7 +137,7 @@ export function RecentUsers() {
                   className="group flex items-center gap-3 p-2 -mx-2 rounded hover:bg-[hsl(var(--muted)/0.5)] transition-colors cursor-pointer"
                 >
                   <div className={`w-6 h-6 rounded ${getAvatarColor(user.name)} flex items-center justify-center text-white text-[10px] font-medium`}>
-                    {user.name.charAt(0).toUpperCase()}
+                    {user.name?.charAt(0)?.toUpperCase() || '?'}
                   </div>
                   <div className="flex-1 min-w-0">
                     <span className="text-sm text-[hsl(var(--foreground))] truncate block">

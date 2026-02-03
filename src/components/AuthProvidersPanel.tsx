@@ -7,7 +7,8 @@ import { mockAuthProviders } from '../data/mockData';
 
 const ITEMS_PER_PAGE = 5;
 
-function getProviderIcon(type: string): string {
+function getProviderIcon(type: string | undefined | null): string {
+  if (!type) return '?';
   const typeMap: Record<string, string> = {
     'Google': 'G',
     'Facebook': 'f',
@@ -24,10 +25,11 @@ function getProviderIcon(type: string): string {
       return icon;
     }
   }
-  return type.charAt(0).toUpperCase();
+  return type.charAt(0)?.toUpperCase() || '?';
 }
 
-function getProviderColor(type: string): string {
+function getProviderColor(type: string | undefined | null): string {
+  if (!type) return 'bg-violet-500';
   if (type.toLowerCase().includes('google')) return 'bg-red-500';
   if (type.toLowerCase().includes('facebook')) return 'bg-blue-600';
   if (type.toLowerCase().includes('microsoft')) return 'bg-blue-500';
@@ -56,7 +58,7 @@ export function AuthProvidersPanel() {
 
     fetchAuthProviders()
       .then(data => {
-        setProviders(data);
+        setProviders(data || []);
         setCurrentPage(0);
       })
       .catch(err => {
