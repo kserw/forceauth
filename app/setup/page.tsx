@@ -1,6 +1,6 @@
 'use client';
 
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, Terminal } from 'lucide-react';
 import { useState } from 'react';
 import { Header } from '../../src/components/Header';
 
@@ -21,170 +21,172 @@ export default function SetupPage() {
     <div className="min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))] flex flex-col">
       <Header />
       <main className="flex-1">
-        <div className="max-w-3xl mx-auto px-6 py-12">
-          <h1 className="text-3xl font-bold mb-2">External Client App Setup</h1>
-        <p className="text-[hsl(var(--muted-foreground))] mb-8">
-          Follow these steps to create a Salesforce External Client App for ForceAuth.
-        </p>
-
-        <div className="space-y-8">
-          {/* Step 1 */}
-          <div className="border border-[hsl(var(--border))] rounded-lg p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-[hsl(var(--info))] text-white font-bold text-sm">1</span>
-              <h2 className="text-xl font-semibold">Create External Client App</h2>
-            </div>
-            <p className="text-[hsl(var(--muted-foreground))] mb-4">
-              In your Salesforce org, navigate to:
+        <div className="max-w-2xl mx-auto px-6 py-12">
+          <div className="mb-8">
+            <h1 className="text-2xl font-medium mb-2">// setup_guide</h1>
+            <p className="text-xs text-[hsl(var(--muted-foreground))]">
+              create a salesforce external client app for forceauth
             </p>
-            <div className="bg-[hsl(var(--muted))] rounded-lg p-4 font-mono text-sm">
-              Setup → Apps → App Manager → <span className="text-[hsl(var(--info))]">New External Client App</span>
-            </div>
           </div>
 
-          {/* Step 2 */}
-          <div className="border border-[hsl(var(--border))] rounded-lg p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-[hsl(var(--info))] text-white font-bold text-sm">2</span>
-              <h2 className="text-xl font-semibold">Basic Information</h2>
-            </div>
-            <p className="text-[hsl(var(--muted-foreground))] mb-4">
-              Fill in the basic details:
-            </p>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center bg-[hsl(var(--muted))] rounded-lg p-3">
-                <span className="text-sm font-medium">External Client App Name</span>
-                <span className="text-sm text-[hsl(var(--muted-foreground))]">ForceAuth Dashboard</span>
+          <div className="space-y-4">
+            {/* Step 1 */}
+            <div className="border border-[hsl(var(--border))] rounded-md p-4 bg-[hsl(var(--card))]">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-[10px] text-[hsl(var(--muted-foreground))]">01</span>
+                <span className="text-xs text-[hsl(var(--foreground))]">create_app</span>
               </div>
-              <div className="flex justify-between items-center bg-[hsl(var(--muted))] rounded-lg p-3">
-                <span className="text-sm font-medium">Contact Email</span>
-                <span className="text-sm text-[hsl(var(--muted-foreground))]">Your email address</span>
-              </div>
-              <div className="flex justify-between items-center bg-[hsl(var(--muted))] rounded-lg p-3">
-                <span className="text-sm font-medium">Distribution State</span>
-                <span className="text-sm text-[hsl(var(--muted-foreground))]">Local</span>
+              <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
+                in salesforce setup, navigate to:
+              </p>
+              <div className="bg-[hsl(var(--muted))] rounded px-3 py-2 font-mono text-xs">
+                setup → apps → app_manager → <span className="text-[hsl(var(--info))]">new_external_client_app</span>
               </div>
             </div>
-          </div>
 
-          {/* Step 3 */}
-          <div className="border border-[hsl(var(--border))] rounded-lg p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-[hsl(var(--info))] text-white font-bold text-sm">3</span>
-              <h2 className="text-xl font-semibold">Configure OAuth Settings</h2>
-            </div>
-            <p className="text-[hsl(var(--muted-foreground))] mb-4">
-              Click <strong>Add</strong> under OAuth Settings and select <strong>Enable OAuth</strong>:
-            </p>
-            <div className="space-y-3">
-              <div className="bg-[hsl(var(--muted))] rounded-lg p-3">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium">Callback URL</span>
-                  <button
-                    onClick={() => copyToClipboard(callbackUrl, 'callback')}
-                    className="flex items-center gap-1 text-xs text-[hsl(var(--info))] hover:underline"
-                  >
-                    {copiedField === 'callback' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                    {copiedField === 'callback' ? 'Copied!' : 'Copy'}
-                  </button>
+            {/* Step 2 */}
+            <div className="border border-[hsl(var(--border))] rounded-md p-4 bg-[hsl(var(--card))]">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-[10px] text-[hsl(var(--muted-foreground))]">02</span>
+                <span className="text-xs text-[hsl(var(--foreground))]">basic_info</span>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-[hsl(var(--muted-foreground))]">app_name</span>
+                  <span className="font-mono">forceauth_dashboard</span>
                 </div>
-                <code className="text-sm text-[hsl(var(--info))] break-all">{callbackUrl}</code>
-              </div>
-
-              <div className="bg-[hsl(var(--muted))] rounded-lg p-3">
-                <span className="text-sm font-medium">Selected OAuth Scopes</span>
-                <div className="mt-2 space-y-1">
-                  <div className="text-sm text-[hsl(var(--muted-foreground))]">• Access and manage your data (api)</div>
-                  <div className="text-sm text-[hsl(var(--muted-foreground))]">• Perform requests at any time (refresh_token, offline_access)</div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-[hsl(var(--muted-foreground))]">contact_email</span>
+                  <span className="font-mono text-[hsl(var(--muted-foreground))]">your_email</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-[hsl(var(--muted-foreground))]">distribution</span>
+                  <span className="font-mono">local</span>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Step 4 */}
-          <div className="border border-[hsl(var(--border))] rounded-lg p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-[hsl(var(--info))] text-white font-bold text-sm">4</span>
-              <h2 className="text-xl font-semibold">Enable PKCE</h2>
-            </div>
-            <p className="text-[hsl(var(--muted-foreground))] mb-4">
-              Under Client Credentials, configure:
-            </p>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 bg-[hsl(var(--success)/0.1)] text-[hsl(var(--success))] rounded-lg p-3">
-                <Check className="w-4 h-4" />
-                <span className="text-sm">Require Proof Key for Code Exchange (PKCE)</span>
+            {/* Step 3 */}
+            <div className="border border-[hsl(var(--border))] rounded-md p-4 bg-[hsl(var(--card))]">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-[10px] text-[hsl(var(--muted-foreground))]">03</span>
+                <span className="text-xs text-[hsl(var(--foreground))]">oauth_settings</span>
               </div>
-              <div className="flex items-center gap-2 bg-[hsl(var(--muted))] rounded-lg p-3">
-                <div className="w-4 h-4 border-2 border-[hsl(var(--muted-foreground))] rounded" />
-                <span className="text-sm text-[hsl(var(--muted-foreground))]">Require Secret for Web Server Flow <span className="text-xs">(leave unchecked)</span></span>
-              </div>
-            </div>
-          </div>
+              <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
+                click add under oauth settings, then enable oauth:
+              </p>
+              <div className="space-y-2">
+                <div className="bg-[hsl(var(--muted))] rounded px-3 py-2">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-xs text-[hsl(var(--muted-foreground))]">callback_url</span>
+                    <button
+                      onClick={() => copyToClipboard(callbackUrl, 'callback')}
+                      className="flex items-center gap-1 text-[10px] text-[hsl(var(--info))] hover:underline"
+                    >
+                      {copiedField === 'callback' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      {copiedField === 'callback' ? 'copied' : 'copy'}
+                    </button>
+                  </div>
+                  <code className="text-xs text-[hsl(var(--info))] break-all font-mono">{callbackUrl}</code>
+                </div>
 
-          {/* Step 5 */}
-          <div className="border border-[hsl(var(--border))] rounded-lg p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-[hsl(var(--info))] text-white font-bold text-sm">5</span>
-              <h2 className="text-xl font-semibold">Save and Get Client ID</h2>
+                <div className="bg-[hsl(var(--muted))] rounded px-3 py-2">
+                  <span className="text-xs text-[hsl(var(--muted-foreground))]">oauth_scopes</span>
+                  <div className="mt-1 text-xs font-mono space-y-0.5">
+                    <div>• api</div>
+                    <div>• refresh_token, offline_access</div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <ol className="list-decimal list-inside space-y-2 text-[hsl(var(--muted-foreground))]">
-              <li>Click <strong>Save</strong> at the bottom of the page</li>
-              <li>Click <strong>Continue</strong> on the confirmation dialog</li>
-              <li>Wait 2-10 minutes for changes to propagate</li>
-              <li>Go to <strong>App Manager</strong> → find your app → click dropdown → <strong>View</strong></li>
-              <li>Under OAuth Settings, click <strong>Manage Consumer Details</strong></li>
-              <li>Verify your identity, then copy the <strong>Client ID</strong> (Consumer Key)</li>
-            </ol>
-          </div>
 
-          {/* Step 6 */}
-          <div className="border border-[hsl(var(--border))] rounded-lg p-6 bg-[hsl(var(--success)/0.05)]">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-[hsl(var(--success))] text-white font-bold text-sm">6</span>
-              <h2 className="text-xl font-semibold">Configure ForceAuth</h2>
+            {/* Step 4 */}
+            <div className="border border-[hsl(var(--border))] rounded-md p-4 bg-[hsl(var(--card))]">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-[10px] text-[hsl(var(--muted-foreground))]">04</span>
+                <span className="text-xs text-[hsl(var(--foreground))]">enable_pkce</span>
+              </div>
+              <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">
+                under client credentials:
+              </p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-xs">
+                  <div className="w-3 h-3 rounded-sm bg-[hsl(var(--success))] flex items-center justify-center">
+                    <Check className="w-2 h-2 text-white" />
+                  </div>
+                  <span>require_pkce</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-[hsl(var(--muted-foreground))]">
+                  <div className="w-3 h-3 rounded-sm border border-[hsl(var(--border))]" />
+                  <span>require_secret <span className="text-[10px]">(leave unchecked)</span></span>
+                </div>
+              </div>
             </div>
-            <p className="text-[hsl(var(--muted-foreground))] mb-4">
-              Return to ForceAuth and enter:
-            </p>
-            <div className="space-y-2">
-              <div className="bg-[hsl(var(--background))] rounded-lg p-3 border border-[hsl(var(--border))]">
-                <span className="text-sm"><strong>Org Name:</strong> Any friendly name for your org</span>
-              </div>
-              <div className="bg-[hsl(var(--background))] rounded-lg p-3 border border-[hsl(var(--border))]">
-                <span className="text-sm"><strong>Environment:</strong> Production or Sandbox (match your org)</span>
-              </div>
-              <div className="bg-[hsl(var(--background))] rounded-lg p-3 border border-[hsl(var(--border))]">
-                <span className="text-sm"><strong>Client ID:</strong> The Client ID you copied from Salesforce</span>
-              </div>
-            </div>
-          </div>
 
-          {/* Troubleshooting */}
-          <div className="border border-[hsl(var(--warning)/0.3)] rounded-lg p-6 bg-[hsl(var(--warning)/0.05)]">
-            <h2 className="text-lg font-semibold mb-4 text-[hsl(var(--warning))]">Troubleshooting</h2>
-            <div className="space-y-3 text-sm">
-              <div>
-                <strong>redirect_uri_mismatch error:</strong>
-                <p className="text-[hsl(var(--muted-foreground))]">
-                  Make sure the Callback URL in Salesforce exactly matches: <code className="text-[hsl(var(--info))]">{callbackUrl}</code>
-                </p>
+            {/* Step 5 */}
+            <div className="border border-[hsl(var(--border))] rounded-md p-4 bg-[hsl(var(--card))]">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-[10px] text-[hsl(var(--muted-foreground))]">05</span>
+                <span className="text-xs text-[hsl(var(--foreground))]">get_client_id</span>
               </div>
-              <div>
-                <strong>Changes not taking effect:</strong>
-                <p className="text-[hsl(var(--muted-foreground))]">
-                  Salesforce OAuth changes can take 2-10 minutes to propagate. Wait and try again.
-                </p>
+              <div className="text-xs text-[hsl(var(--muted-foreground))] space-y-1 font-mono">
+                <div>→ save the app</div>
+                <div>→ wait 2-10 min for propagation</div>
+                <div>→ app_manager → view → manage_consumer_details</div>
+                <div>→ copy the <span className="text-[hsl(var(--info))]">client_id</span></div>
               </div>
-              <div>
-                <strong>Invalid client_id:</strong>
-                <p className="text-[hsl(var(--muted-foreground))]">
-                  Double-check you copied the Client ID (not the Client Secret).
-                </p>
+            </div>
+
+            {/* Step 6 */}
+            <div className="border border-[hsl(var(--success)/0.3)] rounded-md p-4 bg-[hsl(var(--success)/0.05)]">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-[10px] text-[hsl(var(--success))]">06</span>
+                <span className="text-xs text-[hsl(var(--success))]">connect_forceauth</span>
+              </div>
+              <div className="text-xs space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-[hsl(var(--muted-foreground))]">org_name</span>
+                  <span className="font-mono text-[hsl(var(--muted-foreground))]">any friendly name</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[hsl(var(--muted-foreground))]">environment</span>
+                  <span className="font-mono">production | sandbox</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[hsl(var(--muted-foreground))]">client_id</span>
+                  <span className="font-mono text-[hsl(var(--info))]">from salesforce</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Troubleshooting */}
+            <div className="border border-[hsl(var(--warning)/0.3)] rounded-md p-4 bg-[hsl(var(--warning)/0.05)]">
+              <div className="flex items-center gap-2 mb-3">
+                <Terminal className="w-3 h-3 text-[hsl(var(--warning))]" />
+                <span className="text-xs text-[hsl(var(--warning))]">troubleshooting</span>
+              </div>
+              <div className="text-xs space-y-2 font-mono">
+                <div>
+                  <span className="text-[hsl(var(--destructive))]">redirect_uri_mismatch</span>
+                  <p className="text-[hsl(var(--muted-foreground))] mt-0.5">
+                    → verify callback_url matches exactly
+                  </p>
+                </div>
+                <div>
+                  <span className="text-[hsl(var(--destructive))]">invalid_client_id</span>
+                  <p className="text-[hsl(var(--muted-foreground))] mt-0.5">
+                    → use client_id, not client_secret
+                  </p>
+                </div>
+                <div>
+                  <span className="text-[hsl(var(--warning))]">changes_not_working</span>
+                  <p className="text-[hsl(var(--muted-foreground))] mt-0.5">
+                    → wait 2-10 min for salesforce propagation
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
         </div>
       </main>
 
