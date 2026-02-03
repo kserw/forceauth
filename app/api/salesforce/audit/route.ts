@@ -2,6 +2,15 @@ import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/stateless-session';
 import { getAuditTrail } from '@/lib/salesforce';
 
+interface SalesforceAuditRecord {
+  Id: string;
+  Action: string;
+  Section: string;
+  CreatedDate: string;
+  CreatedBy?: { Name: string } | null;
+  Display: string;
+}
+
 export async function GET(request: Request) {
   try {
     const session = await getSession();
@@ -12,12 +21,21 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '50', 10);
 
-    const audit = await getAuditTrail(
+    const rawAudit = await getAuditTrail(
       { accessToken: session.accessToken, instanceUrl: session.instanceUrl },
       Math.min(limit, 200)
-    );
+    ) as SalesforceAuditRecord[];
 
-    return NextResponse.json({ audit });
+    const events = (rawAudit || []).map(a => ({
+      id: a.Id,
+      action: a.Action,
+      section: a.Section,
+      createdDate: a.CreatedDate,
+      createdBy: a.CreatedBy?.Name || 'Unknown',
+      display: a.Display,
+    }));
+
+    return NextResponse.json({ events });
   } catch (error) {
     console.error('[Salesforce] Failed to fetch audit trail:', error);
     return NextResponse.json({ error: 'Failed to fetch audit trail' }, { status: 500 });
