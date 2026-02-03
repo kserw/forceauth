@@ -9,7 +9,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'ForceAuth Dashboard',
+  title: 'forceauth',
   description: 'Salesforce security monitoring and authentication dashboard',
   icons: {
     icon: '/favicon.svg',

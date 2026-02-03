@@ -24,15 +24,6 @@ export function Header({ openOrgDropdown, onOrgDropdownChange }: HeaderProps) {
     setPreference(next);
   };
 
-  // Update browser tab title with org name
-  useEffect(() => {
-    if (isAuthenticated && user?.orgName) {
-      document.title = `forceauth // ${user.orgName.toLowerCase()}`;
-    } else {
-      document.title = 'forceauth';
-    }
-  }, [isAuthenticated, user?.orgName]);
-
   // Handle forceOpen from parent
   useEffect(() => {
     if (openOrgDropdown) {
