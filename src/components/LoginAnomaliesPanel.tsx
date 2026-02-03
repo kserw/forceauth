@@ -1,8 +1,9 @@
-import { useEffect, useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { AlertTriangle, Loader2, RefreshCw, Clock, MapPin, Globe, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useDemoMode } from '../context/DemoModeContext';
-import { fetchAnomaliesData, type LoginAnomalyInfo } from '../services/api';
+import { useAnomaliesData } from '../hooks/useAnomaliesData';
+import { type LoginAnomalyInfo } from '../services/api';
 import { mockLoginAnomalies } from '../data/mockData';
 import { getSalesforceUserUrl } from '../utils/salesforceLinks';
 
@@ -38,38 +39,14 @@ function getAnomalyColor(type: string) {
 }
 
 export function LoginAnomaliesPanel() {
-  const { isAuthenticated, instanceUrl, refreshKey } = useAuth();
+  const { isAuthenticated, instanceUrl } = useAuth();
   const { isDemoMode } = useDemoMode();
-  const [anomalies, setAnomalies] = useState<LoginAnomalyInfo[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { loginAnomalies, isLoading, error, refresh } = useAnomaliesData();
   const [currentPage, setCurrentPage] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const showDemoIndicator = isDemoMode && !isAuthenticated;
-  const displayAnomalies = showDemoIndicator ? (mockLoginAnomalies as LoginAnomalyInfo[]) : anomalies;
-
-  const loadData = () => {
-    if (!isAuthenticated) return;
-
-    setIsLoading(true);
-    setError(null);
-
-    fetchAnomaliesData()
-      .then(data => {
-        setAnomalies(data.loginAnomalies);
-        setCurrentPage(0);
-      })
-      .catch(err => {
-        console.error('Failed to fetch anomalies:', err);
-        setError(err.message);
-      })
-      .finally(() => setIsLoading(false));
-  };
-
-  useEffect(() => {
-    loadData();
-  }, [isAuthenticated, refreshKey]);
+  const displayAnomalies = showDemoIndicator ? (mockLoginAnomalies as LoginAnomalyInfo[]) : loginAnomalies;
 
   const totalPages = Math.ceil(displayAnomalies.length / ITEMS_PER_PAGE);
   const paginatedAnomalies = displayAnomalies.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
@@ -108,7 +85,7 @@ export function LoginAnomaliesPanel() {
             {isLoading ? <Loader2 className="w-3 h-3 animate-spin inline" /> : `${displayAnomalies.length} detected`}
           </span>
           <button
-            onClick={loadData}
+            onClick={refresh}
             disabled={isLoading}
             className="p-1 rounded hover:bg-[hsl(var(--muted))] transition-colors disabled:opacity-50"
           >

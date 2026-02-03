@@ -1,8 +1,9 @@
-import { useEffect, useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Users, Loader2, RefreshCw, Monitor, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useDemoMode } from '../context/DemoModeContext';
-import { fetchAnomaliesData, type ConcurrentSessionInfo } from '../services/api';
+import { useAnomaliesData } from '../hooks/useAnomaliesData';
+import { type ConcurrentSessionInfo } from '../services/api';
 import { mockConcurrentSessions } from '../data/mockData';
 import { getSalesforceUserUrl } from '../utils/salesforceLinks';
 
@@ -22,38 +23,14 @@ function formatTimeAgo(dateString: string): string {
 }
 
 export function ConcurrentSessionsPanel() {
-  const { isAuthenticated, instanceUrl, refreshKey } = useAuth();
+  const { isAuthenticated, instanceUrl } = useAuth();
   const { isDemoMode } = useDemoMode();
-  const [sessions, setSessions] = useState<ConcurrentSessionInfo[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { concurrentSessions, isLoading, error, refresh } = useAnomaliesData();
   const [currentPage, setCurrentPage] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const showDemoIndicator = isDemoMode && !isAuthenticated;
-  const displaySessions = showDemoIndicator ? (mockConcurrentSessions as ConcurrentSessionInfo[]) : sessions;
-
-  const loadData = () => {
-    if (!isAuthenticated) return;
-
-    setIsLoading(true);
-    setError(null);
-
-    fetchAnomaliesData()
-      .then(data => {
-        setSessions(data.concurrentSessions);
-        setCurrentPage(0);
-      })
-      .catch(err => {
-        console.error('Failed to fetch concurrent sessions:', err);
-        setError(err.message);
-      })
-      .finally(() => setIsLoading(false));
-  };
-
-  useEffect(() => {
-    loadData();
-  }, [isAuthenticated, refreshKey]);
+  const displaySessions = showDemoIndicator ? (mockConcurrentSessions as ConcurrentSessionInfo[]) : concurrentSessions;
 
   const totalPages = Math.ceil(displaySessions.length / ITEMS_PER_PAGE);
   const paginatedSessions = displaySessions.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
@@ -91,7 +68,7 @@ export function ConcurrentSessionsPanel() {
             {isLoading ? <Loader2 className="w-3 h-3 animate-spin inline" /> : `${displaySessions.length} users`}
           </span>
           <button
-            onClick={loadData}
+            onClick={refresh}
             disabled={isLoading}
             className="p-1 rounded hover:bg-[hsl(var(--muted))] transition-colors disabled:opacity-50"
           >

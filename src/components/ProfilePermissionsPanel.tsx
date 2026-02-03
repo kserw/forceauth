@@ -1,45 +1,22 @@
-import { useEffect, useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Users, Loader2, RefreshCw, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useDemoMode } from '../context/DemoModeContext';
-import { fetchPermissionsData, type ProfilePermissionsInfo } from '../services/api';
+import { usePermissionsData } from '../hooks/usePermissionsData';
+import { type ProfilePermissionsInfo } from '../services/api';
 import { getSalesforceProfileUrl } from '../utils/salesforceLinks';
 import { mockProfilePermissions } from '../data/mockData';
 
 const ITEMS_PER_PAGE = 10;
 
 export function ProfilePermissionsPanel() {
-  const { isAuthenticated, instanceUrl, refreshKey } = useAuth();
+  const { isAuthenticated, instanceUrl } = useAuth();
   const { isDemoMode } = useDemoMode();
-  const [profiles, setProfiles] = useState<ProfilePermissionsInfo[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { profiles, isLoading, error, refresh } = usePermissionsData();
   const [currentPage, setCurrentPage] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const showDemoIndicator = isDemoMode && !isAuthenticated;
-
-  const loadData = () => {
-    if (!isAuthenticated) return;
-
-    setIsLoading(true);
-    setError(null);
-
-    fetchPermissionsData()
-      .then(data => {
-        setProfiles(data.profiles);
-        setCurrentPage(0);
-      })
-      .catch(err => {
-        console.error('Failed to fetch profiles:', err);
-        setError(err.message);
-      })
-      .finally(() => setIsLoading(false));
-  };
-
-  useEffect(() => {
-    loadData();
-  }, [isAuthenticated, refreshKey]);
 
   const displayProfiles = showDemoIndicator ? mockProfilePermissions as ProfilePermissionsInfo[] : profiles;
 
@@ -84,7 +61,7 @@ export function ProfilePermissionsPanel() {
             {isLoading && !showDemoIndicator ? <Loader2 className="w-3 h-3 animate-spin inline" /> : `${displayProfiles.length} profiles`}
           </span>
           <button
-            onClick={loadData}
+            onClick={refresh}
             disabled={isLoading}
             className="p-1 rounded hover:bg-[hsl(var(--muted))] transition-colors disabled:opacity-50"
           >

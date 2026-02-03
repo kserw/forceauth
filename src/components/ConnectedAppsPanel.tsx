@@ -1,8 +1,8 @@
-import { useEffect, useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { AppWindow, Loader2, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useDemoMode } from '../context/DemoModeContext';
-import { fetchIntegrationsData, type OAuthTokenInfo } from '../services/api';
+import { useIntegrationsData } from '../hooks/useIntegrationsData';
 import { mockConnectedApps } from '../data/mockData';
 
 const ITEMS_PER_PAGE = 10;
@@ -14,37 +14,14 @@ function formatDate(dateString: string | null): string {
 }
 
 export function ConnectedAppsPanel() {
-  const { isAuthenticated, refreshKey } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { isDemoMode } = useDemoMode();
-  const [tokens, setTokens] = useState<OAuthTokenInfo[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { oauthTokens, isLoading, error, refresh } = useIntegrationsData();
   const [currentPage, setCurrentPage] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const showDemoIndicator = isDemoMode && !isAuthenticated;
-
-  const loadData = () => {
-    if (!isAuthenticated) return;
-
-    setIsLoading(true);
-    setError(null);
-
-    fetchIntegrationsData()
-      .then(data => {
-        setTokens(data.oauthTokens);
-        setCurrentPage(0);
-      })
-      .catch(err => {
-        console.error('Failed to fetch OAuth tokens:', err);
-        setError(err.message);
-      })
-      .finally(() => setIsLoading(false));
-  };
-
-  useEffect(() => {
-    loadData();
-  }, [isAuthenticated, refreshKey]);
+  const tokens = oauthTokens;
 
   if (!isAuthenticated && !isDemoMode) {
     return (
@@ -104,7 +81,7 @@ export function ConnectedAppsPanel() {
             {isLoading ? <Loader2 className="w-3 h-3 animate-spin inline" /> : `${apps.length} apps`}
           </span>
           <button
-            onClick={loadData}
+            onClick={refresh}
             disabled={isLoading}
             className="p-1 rounded hover:bg-[hsl(var(--muted))] transition-colors disabled:opacity-50"
           >

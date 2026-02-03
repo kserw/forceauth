@@ -1,46 +1,23 @@
-import { useEffect, useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { UserX, Loader2, RefreshCw, AlertTriangle, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useDemoMode } from '../context/DemoModeContext';
-import { fetchPermissionsData, exportToCSV, type HighRiskUserInfo } from '../services/api';
+import { usePermissionsData } from '../hooks/usePermissionsData';
+import { exportToCSV, type HighRiskUserInfo } from '../services/api';
 import { mockHighRiskUsers } from '../data/mockData';
 import { getSalesforceUserUrl } from '../utils/salesforceLinks';
 
 const ITEMS_PER_PAGE = 10;
 
 export function HighRiskUsersPanel() {
-  const { isAuthenticated, instanceUrl, refreshKey } = useAuth();
+  const { isAuthenticated, instanceUrl } = useAuth();
   const { isDemoMode } = useDemoMode();
-  const [users, setUsers] = useState<HighRiskUserInfo[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { highRiskUsers, isLoading, error, refresh } = usePermissionsData();
   const [currentPage, setCurrentPage] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const showDemoIndicator = isDemoMode && !isAuthenticated;
-  const displayUsers = showDemoIndicator ? (mockHighRiskUsers as HighRiskUserInfo[]) : users;
-
-  const loadData = () => {
-    if (!isAuthenticated) return;
-
-    setIsLoading(true);
-    setError(null);
-
-    fetchPermissionsData()
-      .then(data => {
-        setUsers(data.highRiskUsers);
-        setCurrentPage(0);
-      })
-      .catch(err => {
-        console.error('Failed to fetch high risk users:', err);
-        setError(err.message);
-      })
-      .finally(() => setIsLoading(false));
-  };
-
-  useEffect(() => {
-    loadData();
-  }, [isAuthenticated, refreshKey]);
+  const displayUsers = showDemoIndicator ? (mockHighRiskUsers as HighRiskUserInfo[]) : highRiskUsers;
 
   if (!isAuthenticated && !isDemoMode) {
     return (
@@ -122,7 +99,7 @@ export function HighRiskUsersPanel() {
             <Download className="w-3 h-3 text-[hsl(var(--muted-foreground))]" />
           </button>
           <button
-            onClick={loadData}
+            onClick={refresh}
             disabled={isLoading}
             className="p-1 rounded hover:bg-[hsl(var(--muted))] transition-colors disabled:opacity-50"
           >

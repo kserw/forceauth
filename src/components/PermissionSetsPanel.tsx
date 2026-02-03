@@ -1,45 +1,22 @@
-import { useEffect, useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Shield, Loader2, RefreshCw, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useDemoMode } from '../context/DemoModeContext';
-import { fetchPermissionsData, type PermissionSetInfo } from '../services/api';
+import { usePermissionsData } from '../hooks/usePermissionsData';
+import { type PermissionSetInfo } from '../services/api';
 import { getSalesforcePermissionSetUrl } from '../utils/salesforceLinks';
 import { mockPermissionSets } from '../data/mockData';
 
 const ITEMS_PER_PAGE = 10;
 
 export function PermissionSetsPanel() {
-  const { isAuthenticated, instanceUrl, refreshKey } = useAuth();
+  const { isAuthenticated, instanceUrl } = useAuth();
   const { isDemoMode } = useDemoMode();
-  const [permissionSets, setPermissionSets] = useState<PermissionSetInfo[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { permissionSets, isLoading, error, refresh } = usePermissionsData();
   const [currentPage, setCurrentPage] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const showDemoIndicator = isDemoMode && !isAuthenticated;
-
-  const loadData = () => {
-    if (!isAuthenticated) return;
-
-    setIsLoading(true);
-    setError(null);
-
-    fetchPermissionsData()
-      .then(data => {
-        setPermissionSets(data.permissionSets);
-        setCurrentPage(0);
-      })
-      .catch(err => {
-        console.error('Failed to fetch permission sets:', err);
-        setError(err.message);
-      })
-      .finally(() => setIsLoading(false));
-  };
-
-  useEffect(() => {
-    loadData();
-  }, [isAuthenticated, refreshKey]);
 
   const displayPermissionSets = showDemoIndicator ? mockPermissionSets as PermissionSetInfo[] : permissionSets;
 
@@ -81,7 +58,7 @@ export function PermissionSetsPanel() {
             {isLoading && !showDemoIndicator ? <Loader2 className="w-3 h-3 animate-spin inline" /> : `${displayPermissionSets.length} sets`}
           </span>
           <button
-            onClick={loadData}
+            onClick={refresh}
             disabled={isLoading}
             className="p-1 rounded hover:bg-[hsl(var(--muted))] transition-colors disabled:opacity-50"
           >

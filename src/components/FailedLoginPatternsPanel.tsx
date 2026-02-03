@@ -1,8 +1,9 @@
-import { useEffect, useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { ShieldAlert, Loader2, RefreshCw, Globe, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useDemoMode } from '../context/DemoModeContext';
-import { fetchAnomaliesData, type FailedLoginPatternInfo } from '../services/api';
+import { useAnomaliesData } from '../hooks/useAnomaliesData';
+import { type FailedLoginPatternInfo } from '../services/api';
 import { mockFailedLoginPatterns } from '../data/mockData';
 
 const ITEMS_PER_PAGE = 5;
@@ -13,38 +14,14 @@ function formatTime(dateString: string): string {
 }
 
 export function FailedLoginPatternsPanel() {
-  const { isAuthenticated, refreshKey } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { isDemoMode } = useDemoMode();
-  const [patterns, setPatterns] = useState<FailedLoginPatternInfo[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { failedLoginPatterns, isLoading, error, refresh } = useAnomaliesData();
   const [currentPage, setCurrentPage] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const showDemoIndicator = isDemoMode && !isAuthenticated;
-  const displayPatterns = showDemoIndicator ? (mockFailedLoginPatterns as FailedLoginPatternInfo[]) : patterns;
-
-  const loadData = () => {
-    if (!isAuthenticated) return;
-
-    setIsLoading(true);
-    setError(null);
-
-    fetchAnomaliesData()
-      .then(data => {
-        setPatterns(data.failedLoginPatterns);
-        setCurrentPage(0);
-      })
-      .catch(err => {
-        console.error('Failed to fetch failed patterns:', err);
-        setError(err.message);
-      })
-      .finally(() => setIsLoading(false));
-  };
-
-  useEffect(() => {
-    loadData();
-  }, [isAuthenticated, refreshKey]);
+  const displayPatterns = showDemoIndicator ? (mockFailedLoginPatterns as FailedLoginPatternInfo[]) : failedLoginPatterns;
 
   const totalPages = Math.ceil(displayPatterns.length / ITEMS_PER_PAGE);
   const paginatedPatterns = displayPatterns.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
@@ -89,7 +66,7 @@ export function FailedLoginPatternsPanel() {
             {isLoading ? <Loader2 className="w-3 h-3 animate-spin inline" /> : `${displayPatterns.length} IPs`}
           </span>
           <button
-            onClick={loadData}
+            onClick={refresh}
             disabled={isLoading}
             className="p-1 rounded hover:bg-[hsl(var(--muted))] transition-colors disabled:opacity-50"
           >

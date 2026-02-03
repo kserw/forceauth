@@ -1,49 +1,26 @@
-import { useEffect, useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { KeyRound, Loader2, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useDemoMode } from '../context/DemoModeContext';
-import { fetchIntegrationsData, type NamedCredentialInfo } from '../services/api';
+import { useIntegrationsData } from '../hooks/useIntegrationsData';
+import { type NamedCredentialInfo } from '../services/api';
 import { getSalesforceNamedCredentialUrl } from '../utils/salesforceLinks';
 import { mockNamedCredentials } from '../data/mockData';
 
 const ITEMS_PER_PAGE = 10;
 
 export function NamedCredentialsPanel() {
-  const { isAuthenticated, instanceUrl, refreshKey } = useAuth();
+  const { isAuthenticated, instanceUrl } = useAuth();
   const { isDemoMode } = useDemoMode();
-  const [credentials, setCredentials] = useState<NamedCredentialInfo[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { namedCredentials, isLoading, error, refresh } = useIntegrationsData();
   const [currentPage, setCurrentPage] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const showDemoIndicator = isDemoMode && !isAuthenticated;
-  const displayCredentials = showDemoIndicator ? (mockNamedCredentials as NamedCredentialInfo[]) : credentials;
-
-  const loadData = () => {
-    if (!isAuthenticated) return;
-
-    setIsLoading(true);
-    setError(null);
-
-    fetchIntegrationsData()
-      .then(data => {
-        setCredentials(data.namedCredentials);
-        setCurrentPage(0);
-      })
-      .catch(err => {
-        console.error('Failed to fetch credentials:', err);
-        setError(err.message);
-      })
-      .finally(() => setIsLoading(false));
-  };
+  const displayCredentials = showDemoIndicator ? (mockNamedCredentials as NamedCredentialInfo[]) : namedCredentials;
 
   const totalPages = Math.ceil(displayCredentials.length / ITEMS_PER_PAGE);
   const paginatedCredentials = displayCredentials.slice(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE);
-
-  useEffect(() => {
-    loadData();
-  }, [isAuthenticated, refreshKey]);
 
   if (!isAuthenticated && !isDemoMode) {
     return (
@@ -78,7 +55,7 @@ export function NamedCredentialsPanel() {
             {isLoading ? <Loader2 className="w-3 h-3 animate-spin inline" /> : `${displayCredentials.length} credentials`}
           </span>
           <button
-            onClick={loadData}
+            onClick={refresh}
             disabled={isLoading}
             className="p-1 rounded hover:bg-[hsl(var(--muted))] transition-colors disabled:opacity-50"
           >
