@@ -37,7 +37,6 @@ import { NamedCredentialsPanel } from './components/NamedCredentialsPanel';
 import { TokenRiskPanel } from './components/TokenRiskPanel';
 import { AuthProvidersPanel } from './components/AuthProvidersPanel';
 import { ApiUsagePanel } from './components/ApiUsagePanel';
-import { TrackingTable } from './components/TrackingTable';
 
 // Permissions tab components
 import { PermissionSetsPanel } from './components/PermissionSetsPanel';
@@ -51,7 +50,6 @@ function App() {
   const { activeTab } = useTab();
   const { isDemoMode, setDemoMode } = useDemoMode();
   const [showDashboard, setShowDashboard] = useState(false);
-  const [integrationsSubTab, setIntegrationsSubTab] = useState<'overview' | 'tracking'>('overview');
   const [openOrgDropdown, setOpenOrgDropdown] = useState(false);
 
   // Scroll to top when tab changes
@@ -192,65 +190,35 @@ function App() {
         {/* Integrations Tab */}
         {activeTab === 'integrations' && (
           <>
-            {/* Sub-tab navigation */}
-            <div className="flex items-center gap-1 mb-4">
-              {[
-                { id: 'overview', label: 'Overview' },
-                { id: 'tracking', label: 'Tracking' },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setIntegrationsSubTab(tab.id as 'overview' | 'tracking')}
-                  className={`px-3 py-1.5 rounded text-xs transition-colors ${
-                    integrationsSubTab === tab.id
-                      ? 'bg-[hsl(var(--foreground))] text-[hsl(var(--background))]'
-                      : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))]'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
+            <div className="grid grid-cols-12 gap-4">
+              <div className="col-span-12 lg:col-span-6 min-h-[400px]">
+                <TokenRiskPanel />
+              </div>
+              <div className="col-span-12 lg:col-span-6 min-h-[400px]">
+                <ApiUsagePanel />
+              </div>
             </div>
 
-            {/* Overview sub-tab */}
-            {integrationsSubTab === 'overview' && (
-              <>
-                <div className="grid grid-cols-12 gap-4">
-                  <div className="col-span-12 lg:col-span-6 min-h-[400px]">
-                    <TokenRiskPanel />
-                  </div>
-                  <div className="col-span-12 lg:col-span-6 min-h-[400px]">
-                    <ApiUsagePanel />
-                  </div>
-                </div>
+            <div className="grid grid-cols-12 gap-4">
+              <div className="col-span-12 lg:col-span-6 min-h-[350px]">
+                <ConnectedAppsPanel />
+              </div>
+              <div className="col-span-12 lg:col-span-6 min-h-[350px]">
+                <NamedCredentialsPanel />
+              </div>
+            </div>
 
-                <div className="grid grid-cols-12 gap-4">
-                  <div className="col-span-12 lg:col-span-6 min-h-[350px]">
-                    <ConnectedAppsPanel />
-                  </div>
-                  <div className="col-span-12 lg:col-span-6 min-h-[350px]">
-                    <NamedCredentialsPanel />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-12 gap-4">
-                  <div className="col-span-12 lg:col-span-4 min-h-[320px]">
-                    <AuthProvidersPanel />
-                  </div>
-                  <div className="col-span-12 lg:col-span-4 min-h-[320px]">
-                    <IntegrationUsersPanel />
-                  </div>
-                  <div className="col-span-12 lg:col-span-4 min-h-[320px]">
-                    <InstalledPackagesPanel />
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Tracking sub-tab */}
-            {integrationsSubTab === 'tracking' && (
-              <TrackingTable />
-            )}
+            <div className="grid grid-cols-12 gap-4">
+              <div className="col-span-12 lg:col-span-4 min-h-[320px]">
+                <AuthProvidersPanel />
+              </div>
+              <div className="col-span-12 lg:col-span-4 min-h-[320px]">
+                <IntegrationUsersPanel />
+              </div>
+              <div className="col-span-12 lg:col-span-4 min-h-[320px]">
+                <InstalledPackagesPanel />
+              </div>
+            </div>
           </>
         )}
 
