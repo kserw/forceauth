@@ -2,11 +2,7 @@ import { Shield, Activity, Users, Globe, Lock, Terminal, ChevronRight } from 'lu
 import { Header } from './Header';
 import Link from 'next/link';
 
-interface LandingPageProps {
-  onGetStarted: () => void;
-}
-
-export function LandingPage({ onGetStarted }: LandingPageProps) {
+export function LandingPage() {
   return (
     <div className="min-h-screen bg-[hsl(var(--background))] flex flex-col">
       <Header />
@@ -53,13 +49,13 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
 
           {/* CTA */}
           <div className="text-center">
-            <button
-              onClick={onGetStarted}
+            <Link
+              href="/dashboard"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-md bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-sm font-medium hover:opacity-90 transition-opacity"
             >
               connect_org()
               <ChevronRight className="w-4 h-4" />
-            </button>
+            </Link>
             <p className="mt-3 text-[10px] text-[hsl(var(--muted-foreground))]">
               requires a salesforce external client app with oauth credentials
             </p>

@@ -1,55 +1,55 @@
-import { useState, useEffect } from 'react';
-import { Header } from './components/Header';
-import { StatsCards } from './components/StatsCards';
-import { UsersChart } from './components/UsersChart';
-import { RecentUsers } from './components/RecentUsers';
-import { ActivityTicker } from './components/ActivityTicker';
-import { WorldMap } from './components/WorldMap';
-import { TopCountries } from './components/TopCountries';
-import { TopCities } from './components/TopCities';
-import { ActiveSessions } from './components/ActiveSessions';
-import { SecurityHealth } from './components/SecurityHealth';
-import { AuditTrail } from './components/AuditTrail';
-import { OrgLimitsPanel } from './components/OrgLimitsPanel';
-import { Navigation } from './components/Navigation';
-import { LandingPage } from './components/LandingPage';
-import { DemoModeBanner } from './components/DemoModeBanner';
-import { useAuth } from './context/AuthContext';
-import { useTab } from './context/TabContext';
-import { useDemoMode } from './context/DemoModeContext';
+'use client';
+
+import { useEffect, useState } from 'react';
+import { Header } from '../../src/components/Header';
+import { StatsCards } from '../../src/components/StatsCards';
+import { UsersChart } from '../../src/components/UsersChart';
+import { RecentUsers } from '../../src/components/RecentUsers';
+import { ActivityTicker } from '../../src/components/ActivityTicker';
+import { WorldMap } from '../../src/components/WorldMap';
+import { TopCountries } from '../../src/components/TopCountries';
+import { TopCities } from '../../src/components/TopCities';
+import { ActiveSessions } from '../../src/components/ActiveSessions';
+import { SecurityHealth } from '../../src/components/SecurityHealth';
+import { AuditTrail } from '../../src/components/AuditTrail';
+import { OrgLimitsPanel } from '../../src/components/OrgLimitsPanel';
+import { Navigation } from '../../src/components/Navigation';
+import { DemoModeBanner } from '../../src/components/DemoModeBanner';
+import { useAuth } from '../../src/context/AuthContext';
+import { useTab } from '../../src/context/TabContext';
+import { useDemoMode } from '../../src/context/DemoModeContext';
 import { X } from 'lucide-react';
 
 // Users tab components
-import { UserRiskScoresPanel } from './components/UserRiskScoresPanel';
-import { HighRiskUsersPanel } from './components/HighRiskUsersPanel';
-import { GuestUsersPanel } from './components/GuestUsersPanel';
+import { UserRiskScoresPanel } from '../../src/components/UserRiskScoresPanel';
+import { HighRiskUsersPanel } from '../../src/components/HighRiskUsersPanel';
+import { GuestUsersPanel } from '../../src/components/GuestUsersPanel';
 
 // Activity tab components
-import { ConcurrentSessionsPanel } from './components/ConcurrentSessionsPanel';
-import { LoginAnomaliesPanel } from './components/LoginAnomaliesPanel';
-import { FailedLoginPatternsPanel } from './components/FailedLoginPatternsPanel';
+import { ConcurrentSessionsPanel } from '../../src/components/ConcurrentSessionsPanel';
+import { LoginAnomaliesPanel } from '../../src/components/LoginAnomaliesPanel';
+import { FailedLoginPatternsPanel } from '../../src/components/FailedLoginPatternsPanel';
 
 // Integrations tab components
-import { IntegrationUsersPanel } from './components/IntegrationUsersPanel';
-import { ConnectedAppsPanel } from './components/ConnectedAppsPanel';
-import { InstalledPackagesPanel } from './components/InstalledPackagesPanel';
-import { NamedCredentialsPanel } from './components/NamedCredentialsPanel';
-import { TokenRiskPanel } from './components/TokenRiskPanel';
-import { AuthProvidersPanel } from './components/AuthProvidersPanel';
-import { ApiUsagePanel } from './components/ApiUsagePanel';
+import { IntegrationUsersPanel } from '../../src/components/IntegrationUsersPanel';
+import { ConnectedAppsPanel } from '../../src/components/ConnectedAppsPanel';
+import { InstalledPackagesPanel } from '../../src/components/InstalledPackagesPanel';
+import { NamedCredentialsPanel } from '../../src/components/NamedCredentialsPanel';
+import { TokenRiskPanel } from '../../src/components/TokenRiskPanel';
+import { AuthProvidersPanel } from '../../src/components/AuthProvidersPanel';
+import { ApiUsagePanel } from '../../src/components/ApiUsagePanel';
 
 // Permissions tab components
-import { PermissionSetsPanel } from './components/PermissionSetsPanel';
-import { ProfilePermissionsPanel } from './components/ProfilePermissionsPanel';
+import { PermissionSetsPanel } from '../../src/components/PermissionSetsPanel';
+import { ProfilePermissionsPanel } from '../../src/components/ProfilePermissionsPanel';
 
 // System tab components
-import { DataAuditPanel } from './components/DataAuditPanel';
+import { DataAuditPanel } from '../../src/components/DataAuditPanel';
 
-function App() {
-  const { error, clearError, isAuthenticated, isLoading } = useAuth();
+export default function DashboardPage() {
+  const { error, clearError, isAuthenticated } = useAuth();
   const { activeTab } = useTab();
   const { isDemoMode, setDemoMode } = useDemoMode();
-  const [showDashboard, setShowDashboard] = useState(false);
   const [openOrgDropdown, setOpenOrgDropdown] = useState(false);
 
   // Scroll to top when tab changes
@@ -57,26 +57,14 @@ function App() {
     window.scrollTo(0, 0);
   }, [activeTab]);
 
-  // Sync demo mode with auth state:
-  // - When authenticated, disable demo mode
-  // - When viewing dashboard without auth, enable demo mode
+  // Enable demo mode when not authenticated
   useEffect(() => {
     if (isAuthenticated) {
       setDemoMode(false);
-    } else if (showDashboard) {
+    } else {
       setDemoMode(true);
     }
-  }, [isAuthenticated, showDashboard, setDemoMode]);
-
-  // Show landing page if not authenticated and user hasn't clicked to enter dashboard
-  // Wait for auth check to complete first
-  if (!isLoading && !isAuthenticated && !showDashboard) {
-    return <LandingPage onGetStarted={() => {
-      setShowDashboard(true);
-      setDemoMode(true);
-      setOpenOrgDropdown(true);
-    }} />;
-  }
+  }, [isAuthenticated, setDemoMode]);
 
   return (
     <div className="min-h-screen flex flex-col bg-[hsl(var(--background))]">
@@ -262,5 +250,3 @@ function App() {
     </div>
   );
 }
-
-export default App;
