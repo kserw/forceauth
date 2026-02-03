@@ -24,7 +24,8 @@ function formatTimeAgo(dateString: string): string {
   return date.toLocaleDateString();
 }
 
-function getSectionIcon(section: string) {
+function getSectionIcon(section: string | undefined | null) {
+  if (!section) return <Settings className="w-3 h-3" />;
   const sectionLower = section.toLowerCase();
   if (sectionLower.includes('user') || sectionLower.includes('profile')) {
     return <User className="w-3 h-3" />;
@@ -38,7 +39,8 @@ function getSectionIcon(section: string) {
   return <Settings className="w-3 h-3" />;
 }
 
-function getSectionColor(section: string): string {
+function getSectionColor(section: string | undefined | null): string {
+  if (!section) return 'text-[hsl(var(--muted-foreground))] bg-[hsl(var(--muted))]';
   const sectionLower = section.toLowerCase();
   if (sectionLower.includes('security') || sectionLower.includes('permission')) {
     return 'text-[hsl(var(--destructive))] bg-[hsl(var(--destructive)/0.1)]';
@@ -72,7 +74,7 @@ export function AuditTrail() {
 
     fetchAuditTrail(30)
       .then(data => {
-        setEvents(data);
+        setEvents(data || []);
         setCurrentPage(0);
       })
       .catch((err) => {

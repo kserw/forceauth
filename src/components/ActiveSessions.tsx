@@ -21,7 +21,8 @@ function formatTimeAgo(dateString: string): string {
   return date.toLocaleDateString();
 }
 
-function getSessionIcon(sessionType: string) {
+function getSessionIcon(sessionType: string | undefined | null) {
+  if (!sessionType) return <Smartphone className="w-3.5 h-3.5" />;
   if (sessionType.includes('UI') || sessionType.includes('Content')) {
     return <Monitor className="w-3.5 h-3.5" />;
   }
@@ -31,7 +32,8 @@ function getSessionIcon(sessionType: string) {
   return <Smartphone className="w-3.5 h-3.5" />;
 }
 
-function getSessionTypeLabel(sessionType: string): string {
+function getSessionTypeLabel(sessionType: string | undefined | null): string {
+  if (!sessionType) return 'Unknown';
   const types: Record<string, string> = {
     'UI': 'Browser',
     'API': 'API',
@@ -65,7 +67,7 @@ export function ActiveSessions() {
 
     fetchActiveSessions(50)
       .then(data => {
-        setSessions(data);
+        setSessions(data || []);
         setCurrentPage(0);
       })
       .catch((err) => {
