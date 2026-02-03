@@ -13,12 +13,19 @@ export function OrgDropdown({ onAddEnvironment, refreshKey }: OrgDropdownProps) 
   const { isAuthenticated, user, login, logout, setSelectedOrgId } = useAuth();
   const { setDemoMode } = useDemoMode();
   const [isOpen, setIsOpen] = useState(false);
-  const [storedCredentials, setStoredCredentials] = useState<StoredOrgCredentials | null>(null);
+  const [storedCredentials, setStoredCredentials] = useState<StoredOrgCredentials | null>(() => {
+    // Initialize from localStorage on client-side only
+    if (typeof window !== 'undefined') {
+      return getStoredOrgCredentials();
+    }
+    return null;
+  });
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Load stored credentials on mount and when refreshKey changes
+  // Reload stored credentials when refreshKey changes
   useEffect(() => {
-    setStoredCredentials(getStoredOrgCredentials());
+    const creds = getStoredOrgCredentials();
+    setStoredCredentials(creds);
   }, [refreshKey]);
 
   // Close dropdown when clicking outside
