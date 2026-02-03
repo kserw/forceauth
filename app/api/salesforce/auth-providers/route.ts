@@ -23,7 +23,7 @@ export async function GET() {
       instanceUrl: session.instanceUrl,
     }) as AuthProviderRecord[];
 
-    const providers = results.map(p => ({
+    const providers = (results || []).map(p => ({
       Id: p.Id,
       DeveloperName: p.DeveloperName,
       FriendlyName: p.FriendlyName,

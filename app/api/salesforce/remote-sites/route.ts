@@ -23,7 +23,7 @@ export async function GET() {
       instanceUrl: session.instanceUrl,
     }) as RemoteSiteRecord[];
 
-    const sites = results.map(s => ({
+    const sites = (results || []).map(s => ({
       Id: s.Id,
       SiteName: s.SiteName,
       EndpointUrl: s.EndpointUrl,

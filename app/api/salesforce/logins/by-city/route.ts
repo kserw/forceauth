@@ -17,7 +17,7 @@ export async function GET(request: Request) {
       days
     );
 
-    const stats = results.map(r => ({
+    const stats = (results || []).map(r => ({
       city: r.City || 'Unknown',
       country: r.CountryIso || null,
       count: r.cnt,
