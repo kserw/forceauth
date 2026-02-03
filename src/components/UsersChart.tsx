@@ -26,7 +26,7 @@ export function UsersChart() {
     setIsLoading(true);
     Promise.all([
       fetchUserGrowth(6),
-      fetchLoginsByDay(14)
+      fetchLoginsByDay(28) // Fetch 28 days to compare last 14 vs previous 14
     ])
       .then(([growth, logins]) => {
         setUserGrowth(growth);
@@ -54,8 +54,26 @@ export function UsersChart() {
     ? ((latestGrowth.cumulative - previousGrowth.cumulative) / previousGrowth.cumulative * 100).toFixed(1)
     : '0';
 
-  const totalLogins = displayLoginsByDay.reduce((sum, d) => sum + d.count, 0);
-  const totalFailed = displayLoginsByDay.reduce((sum, d) => sum + d.failCount, 0);
+  // Split into current 14 days and previous 14 days
+  const currentPeriod = displayLoginsByDay.slice(-14);
+  const previousPeriod = displayLoginsByDay.slice(0, 14);
+
+  const totalLogins = currentPeriod.reduce((sum, d) => sum + d.count, 0);
+  const prevLogins = previousPeriod.reduce((sum, d) => sum + d.count, 0);
+  const loginsChange = prevLogins > 0 ? ((totalLogins - prevLogins) / prevLogins * 100).toFixed(1) : '0';
+
+  const totalFailed = currentPeriod.reduce((sum, d) => sum + d.failCount, 0);
+  const prevFailed = previousPeriod.reduce((sum, d) => sum + d.failCount, 0);
+  const failedChange = prevFailed > 0 ? ((totalFailed - prevFailed) / prevFailed * 100).toFixed(1) : '0';
+
+  // Format date range
+  const formatDateRange = (data: LoginDayStat[]) => {
+    if (data.length === 0) return '';
+    const start = new Date(data[0].date);
+    const end = new Date(data[data.length - 1].date);
+    const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return `${fmt(start)} - ${fmt(end)}`;
+  };
 
   // Empty state for non-authenticated view (only when not in demo mode)
   if (!isAuthenticated && !isDemoMode) {
@@ -167,12 +185,18 @@ export function UsersChart() {
             <span className="text-3xl font-semibold text-[hsl(var(--foreground))] tabular-nums">
               {totalLogins.toLocaleString()}
             </span>
+            {Number(loginsChange) !== 0 && (
+              <div className={`flex items-center gap-1 text-xs ${Number(loginsChange) > 0 ? 'text-[hsl(var(--success))]' : 'text-[hsl(var(--muted-foreground))]'}`}>
+                {Number(loginsChange) > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                <span className="tabular-nums">{Number(loginsChange) > 0 ? '+' : ''}{loginsChange}%</span>
+              </div>
+            )}
           </div>
-          <p className="text-xs text-[hsl(var(--muted-foreground))] mb-4">// logins last 14 days</p>
+          <p className="text-xs text-[hsl(var(--muted-foreground))] mb-4">// logins {formatDateRange(currentPeriod)}</p>
 
           <div className="flex-1 min-h-0">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={displayLoginsByDay} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+              <BarChart data={currentPeriod} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
                 <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} dy={8} tickFormatter={(v) => new Date(v).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} />
                 <YAxis hide />
                 <Tooltip
@@ -194,12 +218,18 @@ export function UsersChart() {
             <span className="text-3xl font-semibold text-[hsl(var(--destructive))] tabular-nums">
               {totalFailed.toLocaleString()}
             </span>
+            {Number(failedChange) !== 0 && (
+              <div className={`flex items-center gap-1 text-xs ${Number(failedChange) > 0 ? 'text-[hsl(var(--destructive))]' : 'text-[hsl(var(--success))]'}`}>
+                {Number(failedChange) > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                <span className="tabular-nums">{Number(failedChange) > 0 ? '+' : ''}{failedChange}%</span>
+              </div>
+            )}
           </div>
-          <p className="text-xs text-[hsl(var(--muted-foreground))] mb-4">// failed logins last 14 days</p>
+          <p className="text-xs text-[hsl(var(--muted-foreground))] mb-4">// failed logins {formatDateRange(currentPeriod)}</p>
 
           <div className="flex-1 min-h-0">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={displayLoginsByDay} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+              <BarChart data={currentPeriod} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
                 <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} dy={8} tickFormatter={(v) => new Date(v).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} />
                 <YAxis hide />
                 <Tooltip
