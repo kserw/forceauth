@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/stateless-session';
-import { getLoginsByCity } from '@/lib/salesforce';
+import { getLoginsByCountry } from '@/lib/salesforce';
 
 export async function GET(request: Request) {
   try {
@@ -12,13 +12,15 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const days = parseInt(searchParams.get('days') || '30', 10);
 
-    const results = await getLoginsByCity(
+    // Use getLoginsByCountry - City field is not available in all Salesforce editions
+    const results = await getLoginsByCountry(
       { accessToken: session.accessToken, instanceUrl: session.instanceUrl },
       days
     );
 
+    // Map country data to city format (city shown as country name since city data unavailable)
     const stats = (results || []).map(r => ({
-      city: r.City || 'Unknown',
+      city: r.CountryIso || 'Unknown',
       country: r.CountryIso || null,
       count: r.cnt,
     }));

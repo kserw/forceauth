@@ -2,19 +2,6 @@ import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/stateless-session';
 import { getActiveSessions } from '@/lib/salesforce';
 
-interface SalesforceSessionRecord {
-  Id: string;
-  UsersId: string;
-  CreatedDate: string;
-  LastModifiedDate: string;
-  SessionType: string;
-  SourceIp: string;
-  UserType: string;
-  LoginType: string;
-  SessionSecurityLevel: string;
-  NumSecondsValid: number;
-}
-
 export async function GET(request: Request) {
   try {
     const session = await getSession();
@@ -28,13 +15,14 @@ export async function GET(request: Request) {
     const rawSessions = await getActiveSessions(
       { accessToken: session.accessToken, instanceUrl: session.instanceUrl },
       Math.min(limit, 500)
-    ) as SalesforceSessionRecord[];
+    );
 
+    // User data now included from SOQL relationship
     const sessions = (rawSessions || []).map(s => ({
       id: s.Id,
       userId: s.UsersId,
-      userName: null,
-      userUsername: null,
+      userName: s.Users?.Name || null,
+      userUsername: s.Users?.Username || null,
       createdDate: s.CreatedDate,
       lastModifiedDate: s.LastModifiedDate,
       sessionType: s.SessionType || 'Unknown',

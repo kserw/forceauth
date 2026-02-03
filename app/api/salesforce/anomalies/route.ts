@@ -1,25 +1,14 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/stateless-session';
-import { salesforceQuery, getActiveSessions, getFailedLogins } from '@/lib/salesforce';
-import { filterValidSalesforceIds, parseIntWithBounds, PARAM_BOUNDS } from '@/lib/security';
-
-interface SessionRecord {
-  Id: string;
-  UsersId: string;
-  SourceIp: string;
-  SessionType: string;
-  CreatedDate: string;
-}
-
-interface LoginRecord {
-  Id: string;
-  UserId: string;
-  LoginTime: string;
-  SourceIp: string;
-  LoginType: string;
-  Status: string;
-  CountryIso: string | null;
-}
+import {
+  salesforceQuery,
+  getActiveSessions,
+  getLoginHistory,
+  getUsersByIds,
+  SessionRecord,
+  LoginHistoryRecord,
+} from '@/lib/salesforce';
+import { parseIntWithBounds, PARAM_BOUNDS } from '@/lib/security';
 
 export async function GET(request: Request) {
   try {
@@ -33,26 +22,11 @@ export async function GET(request: Request) {
 
     const opts = { accessToken: session.accessToken, instanceUrl: session.instanceUrl };
 
-    // Fetch active sessions and group by user to find concurrent sessions
-    const sessionResults = await getActiveSessions(opts, 500) as SessionRecord[];
-
-    // Get user info for sessions
-    const userIds = filterValidSalesforceIds([...new Set(sessionResults.map(s => s.UsersId))]);
-    const userMap = new Map<string, { Name: string; Username: string }>();
-
-    if (userIds.length > 0) {
-      const userChunks = [];
-      for (let i = 0; i < userIds.length; i += 50) {
-        userChunks.push(userIds.slice(i, i + 50));
-      }
-
-      for (const chunk of userChunks) {
-        const userResults = await salesforceQuery<{ Id: string; Name: string; Username: string }>(opts,
-          `SELECT Id, Name, Username FROM User WHERE Id IN ('${chunk.join("','")}')`
-        );
-        userResults.forEach(u => userMap.set(u.Id, { Name: u.Name, Username: u.Username }));
-      }
-    }
+    // Fetch active sessions (now includes user data) and failed logins in parallel
+    const [sessionResults, failedLogins] = await Promise.all([
+      getActiveSessions(opts, 500),
+      getLoginHistory(opts, 500, { days, statusFilter: 'failed' }),
+    ]);
 
     // Group sessions by user
     const sessionsByUser = new Map<string, SessionRecord[]>();
@@ -62,12 +36,12 @@ export async function GET(request: Request) {
       sessionsByUser.set(s.UsersId, existing);
     });
 
-    // Find users with multiple concurrent sessions
+    // Find users with multiple concurrent sessions - user data now from SOQL relationship
     const concurrentSessions = Array.from(sessionsByUser.entries())
       .filter(([, sessions]) => sessions.length > 1)
       .map(([userId, sessions]) => ({
         userId,
-        userName: userMap.get(userId)?.Name || 'Unknown',
+        userName: sessions[0]?.Users?.Name || 'Unknown',
         sessionCount: sessions.length,
         sessions: sessions.map(s => ({
           id: s.Id,
@@ -77,11 +51,8 @@ export async function GET(request: Request) {
         })),
       }));
 
-    // Get failed logins for patterns
-    const failedLogins = await getFailedLogins(opts, days, 500) as LoginRecord[];
-
     // Group failed logins by IP
-    const failedByIp = new Map<string, { country: string | null; logins: LoginRecord[] }>();
+    const failedByIp = new Map<string, { country: string | null; logins: LoginHistoryRecord[] }>();
     failedLogins.forEach(login => {
       const existing = failedByIp.get(login.SourceIp);
       if (existing) {
@@ -104,29 +75,27 @@ export async function GET(request: Request) {
       .slice(0, 20);
 
     // Simple login anomalies - unusual hours (outside 6am-8pm)
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-    const recentLogins = await salesforceQuery<LoginRecord>(opts,
-      `SELECT Id, UserId, LoginTime, SourceIp, CountryIso FROM LoginHistory
-       WHERE LoginTime >= ${startDate.toISOString().split('T')[0]}T00:00:00Z
-       ORDER BY LoginTime DESC LIMIT 200`
-    );
+    const recentLogins = await getLoginHistory(opts, 200, { days });
 
-    const loginAnomalies = recentLogins
-      .filter(login => {
-        const hour = new Date(login.LoginTime).getHours();
-        return hour < 6 || hour > 20;
-      })
-      .slice(0, 20)
-      .map(login => ({
-        userId: login.UserId,
-        userName: userMap.get(login.UserId)?.Name || 'Unknown',
-        anomalyType: 'unusual_hour' as const,
-        description: `Login at unusual hour (${new Date(login.LoginTime).getHours()}:00)`,
-        loginTime: login.LoginTime,
-        sourceIp: login.SourceIp,
-        country: login.CountryIso,
-      }));
+    // Filter for unusual hours first
+    const unusualHourLogins = recentLogins.filter(login => {
+      const hour = new Date(login.LoginTime).getHours();
+      return hour < 6 || hour > 20;
+    }).slice(0, 20);
+
+    // Get user names for anomaly logins using parallel helper
+    const anomalyUserIds = [...new Set(unusualHourLogins.map(l => l.UserId))];
+    const userMap = await getUsersByIds(opts, anomalyUserIds);
+
+    const loginAnomalies = unusualHourLogins.map(login => ({
+      userId: login.UserId,
+      userName: userMap.get(login.UserId)?.Name || 'Unknown',
+      anomalyType: 'unusual_hour' as const,
+      description: `Login at unusual hour (${new Date(login.LoginTime).getHours()}:00)`,
+      loginTime: login.LoginTime,
+      sourceIp: login.SourceIp,
+      country: login.CountryIso,
+    }));
 
     return NextResponse.json({
       concurrentSessions,

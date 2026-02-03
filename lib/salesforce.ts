@@ -59,28 +59,134 @@ export async function getRecentUsers(options: SalesforceApiOptions, limit = 10) 
   return salesforceQuery(options, soql);
 }
 
-// Helper to get login history
-export async function getLoginHistory(options: SalesforceApiOptions, limit = 100) {
+// Login history record type
+export interface LoginHistoryRecord {
+  Id: string;
+  UserId: string;
+  LoginTime: string;
+  SourceIp: string;
+  LoginType: string;
+  Status: string;
+  Application: string | null;
+  Browser: string | null;
+  Platform: string | null;
+  CountryIso: string | null;
+}
+
+// Login history filter options
+export interface LoginHistoryOptions {
+  days?: number;
+  statusFilter?: 'all' | 'failed' | 'success';
+}
+
+// Helper to get login history with optional filtering
+export async function getLoginHistory(
+  options: SalesforceApiOptions,
+  limit = 100,
+  filterOptions?: LoginHistoryOptions
+) {
+  const { days, statusFilter = 'all' } = filterOptions || {};
+
+  let dateFilter = '';
+  if (days) {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    const startDateStr = startDate.toISOString().split('T')[0];
+    dateFilter = `WHERE LoginTime >= ${startDateStr}T00:00:00Z`;
+  }
+
+  // Note: Status field is not filterable in SOQL, so we fetch more and filter in code
+  const fetchLimit = statusFilter !== 'all' ? limit * 3 : limit;
+
   const soql = `
     SELECT Id, UserId, LoginTime, SourceIp, LoginType, Status,
            Application, Browser, Platform, CountryIso
     FROM LoginHistory
+    ${dateFilter}
     ORDER BY LoginTime DESC
-    LIMIT ${limit}
+    LIMIT ${fetchLimit}
   `;
-  return salesforceQuery(options, soql);
+
+  const results = await salesforceQuery<LoginHistoryRecord>(options, soql);
+
+  // Filter by status if needed
+  if (statusFilter === 'failed') {
+    return results.filter(r => r.Status !== 'Success').slice(0, limit);
+  } else if (statusFilter === 'success') {
+    return results.filter(r => r.Status === 'Success').slice(0, limit);
+  }
+
+  return results.slice(0, limit);
 }
 
-// Helper to get active sessions
-export async function getActiveSessions(options: SalesforceApiOptions, limit = 100) {
+// Session record with user relationship data
+export interface SessionRecord {
+  Id: string;
+  UsersId: string;
+  Users?: {
+    Name: string;
+    Username: string;
+  } | null;
+  CreatedDate: string;
+  LastModifiedDate: string;
+  SessionType: string;
+  SourceIp: string;
+  UserType: string;
+  LoginType: string;
+  SessionSecurityLevel: string;
+  NumSecondsValid: number;
+}
+
+// Helper to get active sessions with user data
+export async function getActiveSessions(options: SalesforceApiOptions, limit = 100): Promise<SessionRecord[]> {
   const soql = `
-    SELECT Id, UsersId, CreatedDate, LastModifiedDate, SessionType,
+    SELECT Id, UsersId, Users.Name, Users.Username, CreatedDate, LastModifiedDate, SessionType,
            SourceIp, UserType, LoginType, SessionSecurityLevel, NumSecondsValid
     FROM AuthSession
     WHERE IsCurrent = true
     LIMIT ${limit}
   `;
-  return salesforceQuery(options, soql);
+  return salesforceQuery<SessionRecord>(options, soql);
+}
+
+// User info type for lookup helper
+export interface UserInfo {
+  Id: string;
+  Name: string;
+  Username: string;
+}
+
+// Helper to get users by IDs in parallel chunks
+export async function getUsersByIds(
+  options: SalesforceApiOptions,
+  userIds: string[]
+): Promise<Map<string, UserInfo>> {
+  const userMap = new Map<string, UserInfo>();
+
+  if (userIds.length === 0) {
+    return userMap;
+  }
+
+  // Chunk into groups of 50 (SOQL IN clause limit)
+  const chunks: string[][] = [];
+  for (let i = 0; i < userIds.length; i += 50) {
+    chunks.push(userIds.slice(i, i + 50));
+  }
+
+  // Fetch all chunks in parallel
+  const results = await Promise.all(
+    chunks.map(chunk =>
+      salesforceQuery<UserInfo>(
+        options,
+        `SELECT Id, Name, Username FROM User WHERE Id IN ('${chunk.join("','")}')`
+      )
+    )
+  );
+
+  // Merge results into map
+  results.flat().forEach(u => userMap.set(u.Id, u));
+
+  return userMap;
 }
 
 // Helper to get setup audit trail
@@ -146,26 +252,6 @@ export async function getLoginsByCountry(options: SalesforceApiOptions, days = 3
   return salesforceQuery<{ CountryIso: string; cnt: number }>(options, soql);
 }
 
-// Get logins by city (City field may not be available in all orgs)
-export async function getLoginsByCity(options: SalesforceApiOptions, days = 30) {
-  // City field is not available in all Salesforce editions
-  // Return country-based data as fallback
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - days);
-  const startDateStr = startDate.toISOString().split('T')[0];
-
-  const soql = `
-    SELECT CountryIso, COUNT(Id) cnt
-    FROM LoginHistory
-    WHERE LoginTime >= ${startDateStr}T00:00:00Z
-    GROUP BY CountryIso
-    ORDER BY COUNT(Id) DESC
-    LIMIT 20
-  `;
-  const results = await salesforceQuery<{ CountryIso: string; cnt: number }>(options, soql);
-  // Map to expected format with city as country name
-  return results.map(r => ({ City: r.CountryIso || 'Unknown', CountryIso: r.CountryIso, cnt: r.cnt }));
-}
 
 // Get logins by source/application
 export async function getLoginsBySource(options: SalesforceApiOptions, days = 30) {
@@ -184,37 +270,11 @@ export async function getLoginsBySource(options: SalesforceApiOptions, days = 30
   return salesforceQuery<{ Application: string; cnt: number }>(options, soql);
 }
 
-// Get failed logins
-interface LoginHistoryRecord {
-  Id: string;
-  UserId: string;
-  LoginTime: string;
-  SourceIp: string;
-  LoginType: string;
-  Status: string;
-  Application: string | null;
-  Browser: string | null;
-  Platform: string | null;
-  CountryIso: string | null;
-}
-
+/**
+ * @deprecated Use getLoginHistory with statusFilter: 'failed' instead
+ */
 export async function getFailedLogins(options: SalesforceApiOptions, days = 7, limit = 100): Promise<LoginHistoryRecord[]> {
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - days);
-  const startDateStr = startDate.toISOString().split('T')[0];
-
-  // Note: Status field is not filterable in SOQL, so we fetch all and filter in code
-  const soql = `
-    SELECT Id, UserId, LoginTime, SourceIp, LoginType, Status,
-           Application, Browser, Platform, CountryIso
-    FROM LoginHistory
-    WHERE LoginTime >= ${startDateStr}T00:00:00Z
-    ORDER BY LoginTime DESC
-    LIMIT ${limit * 3}
-  `;
-  const results = await salesforceQuery<LoginHistoryRecord>(options, soql);
-  // Filter to only failed logins
-  return results.filter(r => r.Status !== 'Success').slice(0, limit);
+  return getLoginHistory(options, limit, { days, statusFilter: 'failed' });
 }
 
 // Get logins by type

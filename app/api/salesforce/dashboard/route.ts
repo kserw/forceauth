@@ -8,35 +8,9 @@ import {
   getOrgLimits,
   getLoginsByCountry,
   getLoginsByType,
-  salesforceQuery,
+  LoginHistoryRecord,
+  SessionRecord,
 } from '@/lib/salesforce';
-import { filterValidSalesforceIds } from '@/lib/security';
-
-interface LoginRecord {
-  Id: string;
-  UserId: string;
-  LoginTime: string;
-  SourceIp: string;
-  LoginType: string;
-  Status: string;
-  Application: string | null;
-  Browser: string | null;
-  Platform: string | null;
-  CountryIso: string | null;
-}
-
-interface SessionRecord {
-  Id: string;
-  UsersId: string;
-  CreatedDate: string;
-  LastModifiedDate: string;
-  SessionType: string;
-  SourceIp: string;
-  UserType: string;
-  LoginType: string;
-  SessionSecurityLevel: string;
-  NumSecondsValid: number;
-}
 
 interface AuditRecord {
   Id: string;
@@ -56,27 +30,16 @@ export async function GET() {
 
     const opts = { accessToken: session.accessToken, instanceUrl: session.instanceUrl };
 
-    // Fetch all data in parallel
+    // Fetch all data in parallel - getActiveSessions now includes user data
     const [stats, logins, sessions, audit, limits, loginsByCountry, loginsByType] = await Promise.all([
       getDashboardStats(opts),
-      getLoginHistory(opts, 50) as Promise<LoginRecord[]>,
-      getActiveSessions(opts, 50) as Promise<SessionRecord[]>,
+      getLoginHistory(opts, 50) as Promise<LoginHistoryRecord[]>,
+      getActiveSessions(opts, 50),
       getAuditTrail(opts, 30) as Promise<AuditRecord[]>,
       getOrgLimits(opts),
       getLoginsByCountry(opts, 30),
       getLoginsByType(opts, 30),
     ]);
-
-    // Get user info for sessions
-    const userIds = filterValidSalesforceIds([...new Set(sessions.map(s => s.UsersId))]);
-    const userMap = new Map<string, { Name: string; Username: string }>();
-
-    if (userIds.length > 0) {
-      const userResults = await salesforceQuery<{ Id: string; Name: string; Username: string }>(opts,
-        `SELECT Id, Name, Username FROM User WHERE Id IN ('${userIds.slice(0, 50).join("','")}')`
-      );
-      userResults.forEach(u => userMap.set(u.Id, { Name: u.Name, Username: u.Username }));
-    }
 
     // Format recent logins
     const recentLogins = logins.map(l => ({
@@ -93,12 +56,12 @@ export async function GET() {
       city: null, // City field not available in all Salesforce editions
     }));
 
-    // Format active sessions
+    // Format active sessions - user data now included from SOQL relationship
     const activeSessions = sessions.map(s => ({
       id: s.Id,
       userId: s.UsersId,
-      userName: userMap.get(s.UsersId)?.Name || null,
-      userUsername: userMap.get(s.UsersId)?.Username || null,
+      userName: s.Users?.Name || null,
+      userUsername: s.Users?.Username || null,
       createdDate: s.CreatedDate,
       lastModifiedDate: s.LastModifiedDate,
       sessionType: s.SessionType,
