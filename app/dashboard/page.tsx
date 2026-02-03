@@ -45,6 +45,7 @@ import { ProfilePermissionsPanel } from '../../src/components/ProfilePermissions
 
 // System tab components
 import { DataAuditPanel } from '../../src/components/DataAuditPanel';
+import { OrgHealthPanel } from '../../src/components/dashboard/OrgHealthPanel';
 
 export default function DashboardPage() {
   const { error, clearError, isAuthenticated } = useAuth();
@@ -231,7 +232,10 @@ export default function DashboardPage() {
               <div className="col-span-12 lg:col-span-4 min-h-[400px]">
                 <OrgLimitsPanel />
               </div>
-              <div className="col-span-12 lg:col-span-8 min-h-[400px]">
+              <div className="col-span-12 lg:col-span-4 min-h-[400px]">
+                <OrgHealthPanel />
+              </div>
+              <div className="col-span-12 lg:col-span-4 min-h-[400px]">
                 <AuditTrail />
               </div>
             </div>

@@ -606,6 +606,30 @@ export async function fetchOrgLimits(all = false): Promise<Record<string, OrgLim
   return data.limits;
 }
 
+// User license type
+export interface UserLicense {
+  Id: string;
+  Name: string;
+  TotalLicenses: number;
+  UsedLicenses: number;
+  Status: string;
+}
+
+// Fetch user licenses
+export async function fetchLicenses(): Promise<UserLicense[]> {
+  const response = await fetch(`${API_BASE}/salesforce/licenses`, {
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) throw new Error('Not authenticated');
+    throw new Error('Failed to fetch licenses');
+  }
+
+  const data = await response.json();
+  return data.licenses;
+}
+
 // Fetch active sessions
 export async function fetchActiveSessions(limit = 100): Promise<ActiveSession[]> {
   const response = await fetch(`${API_BASE}/salesforce/sessions?limit=${limit}`, {

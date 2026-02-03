@@ -293,6 +293,23 @@ export const mockOrgLimits: Record<string, OrgLimit> = {
   HourlyTimeBasedWorkflow: { Max: 1000, Remaining: 987 },
 };
 
+// Mock user license data
+export interface MockUserLicense {
+  Id: string;
+  Name: string;
+  TotalLicenses: number;
+  UsedLicenses: number;
+  Status: string;
+}
+
+export const mockLicenses: MockUserLicense[] = [
+  { Id: '1', Name: 'Salesforce', TotalLicenses: 100, UsedLicenses: 87, Status: 'Active' },
+  { Id: '2', Name: 'Salesforce Platform', TotalLicenses: 50, UsedLicenses: 23, Status: 'Active' },
+  { Id: '3', Name: 'Identity', TotalLicenses: 10, UsedLicenses: 5, Status: 'Active' },
+  { Id: '4', Name: 'Customer Community Plus', TotalLicenses: 200, UsedLicenses: 156, Status: 'Active' },
+  { Id: '5', Name: 'Partner Community', TotalLicenses: 25, UsedLicenses: 18, Status: 'Active' },
+];
+
 // Mock active sessions
 export const mockActiveSessions = [
   { id: 'sess-001', userId: 'demo-001', userName: 'Sarah Chen', userUsername: 'sarah.chen@acme.com', createdDate: minutesAgo(12), lastModifiedDate: minutesAgo(2), sessionType: 'UI', sourceIp: '192.168.1.100', userType: 'Standard', loginType: 'Application', securityLevel: 'Standard', validSeconds: 7200 },

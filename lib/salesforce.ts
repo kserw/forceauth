@@ -472,3 +472,23 @@ export async function getConnectedApps(options: SalesforceApiOptions) {
   `;
   return salesforceQuery(options, soql);
 }
+
+// User license record type
+export interface UserLicenseRecord {
+  Id: string;
+  Name: string;
+  TotalLicenses: number;
+  UsedLicenses: number;
+  Status: string;
+}
+
+// Get user licenses
+export async function getUserLicenses(options: SalesforceApiOptions): Promise<UserLicenseRecord[]> {
+  const soql = `
+    SELECT Id, Name, TotalLicenses, UsedLicenses, Status
+    FROM UserLicense
+    WHERE Status = 'Active'
+    ORDER BY Name
+  `;
+  return salesforceQuery<UserLicenseRecord>(options, soql);
+}
