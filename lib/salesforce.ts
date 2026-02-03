@@ -96,11 +96,17 @@ export async function getAuditTrail(options: SalesforceApiOptions, limit = 50) {
 
 // Dashboard stats calculation helpers
 export async function getDashboardStats(options: SalesforceApiOptions) {
-  // Get total users
-  const usersResult = await salesforceQuery<{ expr0: number }>(options,
+  // Get total users (all users including inactive)
+  const totalUsersResult = await salesforceQuery<{ expr0: number }>(options,
+    'SELECT COUNT(Id) FROM User'
+  );
+  const totalUsers = totalUsersResult[0]?.expr0 || 0;
+
+  // Get active users only
+  const activeUsersResult = await salesforceQuery<{ expr0: number }>(options,
     'SELECT COUNT(Id) FROM User WHERE IsActive = true'
   );
-  const totalUsers = usersResult[0]?.expr0 || 0;
+  const activeUsers = activeUsersResult[0]?.expr0 || 0;
 
   // Get logins today
   const today = new Date().toISOString().split('T')[0];
@@ -111,14 +117,14 @@ export async function getDashboardStats(options: SalesforceApiOptions) {
 
   return {
     totalUsers,
-    activeUsers: totalUsers,
+    activeUsers,
     loginsToday,
     loginsThisWeek: loginsToday * 5, // Simplified
     uniqueIpsToday: Math.floor(loginsToday * 0.7),
     growth: {
-      '7d': { current: totalUsers, previous: Math.floor(totalUsers * 0.98), growth: 2 },
-      '30d': { current: totalUsers, previous: Math.floor(totalUsers * 0.95), growth: 5 },
-      '90d': { current: totalUsers, previous: Math.floor(totalUsers * 0.90), growth: 10 },
+      '7d': { current: activeUsers, previous: Math.floor(activeUsers * 0.98), growth: 2 },
+      '30d': { current: activeUsers, previous: Math.floor(activeUsers * 0.95), growth: 5 },
+      '90d': { current: activeUsers, previous: Math.floor(activeUsers * 0.90), growth: 10 },
     },
   };
 }
