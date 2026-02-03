@@ -3,6 +3,7 @@
 import { ArrowLeft, Copy, Check } from 'lucide-react';
 import { useState } from 'react';
 import Link from 'next/link';
+import { Header } from '../../src/components/Header';
 
 export default function SetupPage() {
   const [copiedField, setCopiedField] = useState<string | null>(null);
@@ -19,6 +20,7 @@ export default function SetupPage() {
 
   return (
     <div className="min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
+      <Header />
       <div className="max-w-3xl mx-auto px-6 py-12">
         <Link
           href="/"
