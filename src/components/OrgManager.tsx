@@ -323,7 +323,7 @@ export function OrgManager({ selectedOrgId, onSelectOrg, onOrgRegistered, disabl
                   className="w-full flex items-center gap-2 px-3 py-2 text-xs text-[hsl(var(--info))] hover:bg-[hsl(var(--muted))]"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  {storedCredentials ? 'Change Credentials' : 'Configure Connected App'}
+                  {storedCredentials ? 'Add Environment' : 'Configure External Client App'}
                 </button>
               )}
             </div>
