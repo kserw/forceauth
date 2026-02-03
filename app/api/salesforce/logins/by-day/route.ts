@@ -38,14 +38,20 @@ export async function GET(request: Request) {
       dayCounts.set(date, existing);
     });
 
-    const stats = Array.from(dayCounts.entries())
-      .map(([date, data]) => ({
-        date,
+    // Fill in all days in the range (including days with no logins)
+    const stats = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      const data = dayCounts.get(dateStr) || { total: 0, success: 0, fail: 0 };
+      stats.push({
+        date: dateStr,
         count: data.total,
         successCount: data.success,
         failCount: data.fail,
-      }))
-      .sort((a, b) => a.date.localeCompare(b.date));
+      });
+    }
 
     return NextResponse.json({ stats });
   } catch (error) {
