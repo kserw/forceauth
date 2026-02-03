@@ -61,7 +61,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
               <ChevronRight className="w-4 h-4" />
             </button>
             <p className="mt-3 text-[10px] text-[hsl(var(--muted-foreground))]">
-              requires a salesforce connected app with oauth credentials
+              requires a salesforce external client app with oauth credentials
             </p>
             <Link
               href="/setup"

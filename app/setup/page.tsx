@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, ExternalLink, Copy, Check } from 'lucide-react';
+import { ArrowLeft, Copy, Check } from 'lucide-react';
 import { useState } from 'react';
 import Link from 'next/link';
 
@@ -28,9 +28,9 @@ export default function SetupPage() {
           Back to Dashboard
         </Link>
 
-        <h1 className="text-3xl font-bold mb-2">Connected App Setup</h1>
+        <h1 className="text-3xl font-bold mb-2">External Client App Setup</h1>
         <p className="text-[hsl(var(--muted-foreground))] mb-8">
-          Follow these steps to create a Salesforce Connected App for ForceAuth.
+          Follow these steps to create a Salesforce External Client App for ForceAuth.
         </p>
 
         <div className="space-y-8">
@@ -38,13 +38,13 @@ export default function SetupPage() {
           <div className="border border-[hsl(var(--border))] rounded-lg p-6">
             <div className="flex items-center gap-3 mb-4">
               <span className="flex items-center justify-center w-8 h-8 rounded-full bg-[hsl(var(--info))] text-white font-bold text-sm">1</span>
-              <h2 className="text-xl font-semibold">Open App Manager</h2>
+              <h2 className="text-xl font-semibold">Create External Client App</h2>
             </div>
             <p className="text-[hsl(var(--muted-foreground))] mb-4">
               In your Salesforce org, navigate to:
             </p>
             <div className="bg-[hsl(var(--muted))] rounded-lg p-4 font-mono text-sm">
-              Setup → Apps → App Manager → <span className="text-[hsl(var(--info))]">New Connected App</span>
+              Setup → Apps → App Manager → <span className="text-[hsl(var(--info))]">New External Client App</span>
             </div>
           </div>
 
@@ -59,16 +59,16 @@ export default function SetupPage() {
             </p>
             <div className="space-y-3">
               <div className="flex justify-between items-center bg-[hsl(var(--muted))] rounded-lg p-3">
-                <span className="text-sm font-medium">Connected App Name</span>
+                <span className="text-sm font-medium">External Client App Name</span>
                 <span className="text-sm text-[hsl(var(--muted-foreground))]">ForceAuth Dashboard</span>
-              </div>
-              <div className="flex justify-between items-center bg-[hsl(var(--muted))] rounded-lg p-3">
-                <span className="text-sm font-medium">API Name</span>
-                <span className="text-sm text-[hsl(var(--muted-foreground))]">ForceAuth_Dashboard</span>
               </div>
               <div className="flex justify-between items-center bg-[hsl(var(--muted))] rounded-lg p-3">
                 <span className="text-sm font-medium">Contact Email</span>
                 <span className="text-sm text-[hsl(var(--muted-foreground))]">Your email address</span>
+              </div>
+              <div className="flex justify-between items-center bg-[hsl(var(--muted))] rounded-lg p-3">
+                <span className="text-sm font-medium">Distribution State</span>
+                <span className="text-sm text-[hsl(var(--muted-foreground))]">Local</span>
               </div>
             </div>
           </div>
@@ -77,10 +77,10 @@ export default function SetupPage() {
           <div className="border border-[hsl(var(--border))] rounded-lg p-6">
             <div className="flex items-center gap-3 mb-4">
               <span className="flex items-center justify-center w-8 h-8 rounded-full bg-[hsl(var(--info))] text-white font-bold text-sm">3</span>
-              <h2 className="text-xl font-semibold">Enable OAuth Settings</h2>
+              <h2 className="text-xl font-semibold">Configure OAuth Settings</h2>
             </div>
             <p className="text-[hsl(var(--muted-foreground))] mb-4">
-              Check <strong>&quot;Enable OAuth Settings&quot;</strong> and configure:
+              Click <strong>Add</strong> under OAuth Settings and select <strong>Enable OAuth</strong>:
             </p>
             <div className="space-y-3">
               <div className="bg-[hsl(var(--muted))] rounded-lg p-3">
@@ -114,7 +114,7 @@ export default function SetupPage() {
               <h2 className="text-xl font-semibold">Enable PKCE</h2>
             </div>
             <p className="text-[hsl(var(--muted-foreground))] mb-4">
-              Under OAuth settings, check these options:
+              Under Client Credentials, configure:
             </p>
             <div className="space-y-2">
               <div className="flex items-center gap-2 bg-[hsl(var(--success)/0.1)] text-[hsl(var(--success))] rounded-lg p-3">
@@ -132,15 +132,15 @@ export default function SetupPage() {
           <div className="border border-[hsl(var(--border))] rounded-lg p-6">
             <div className="flex items-center gap-3 mb-4">
               <span className="flex items-center justify-center w-8 h-8 rounded-full bg-[hsl(var(--info))] text-white font-bold text-sm">5</span>
-              <h2 className="text-xl font-semibold">Save and Get Consumer Key</h2>
+              <h2 className="text-xl font-semibold">Save and Get Client ID</h2>
             </div>
             <ol className="list-decimal list-inside space-y-2 text-[hsl(var(--muted-foreground))]">
               <li>Click <strong>Save</strong> at the bottom of the page</li>
               <li>Click <strong>Continue</strong> on the confirmation dialog</li>
               <li>Wait 2-10 minutes for changes to propagate</li>
               <li>Go to <strong>App Manager</strong> → find your app → click dropdown → <strong>View</strong></li>
-              <li>Under &quot;API (Enable OAuth Settings)&quot;, click <strong>Manage Consumer Details</strong></li>
-              <li>Verify your identity, then copy the <strong>Consumer Key</strong></li>
+              <li>Under OAuth Settings, click <strong>Manage Consumer Details</strong></li>
+              <li>Verify your identity, then copy the <strong>Client ID</strong> (Consumer Key)</li>
             </ol>
           </div>
 
@@ -161,7 +161,7 @@ export default function SetupPage() {
                 <span className="text-sm"><strong>Environment:</strong> Production or Sandbox (match your org)</span>
               </div>
               <div className="bg-[hsl(var(--background))] rounded-lg p-3 border border-[hsl(var(--border))]">
-                <span className="text-sm"><strong>Consumer Key:</strong> The key you copied from Salesforce</span>
+                <span className="text-sm"><strong>Client ID:</strong> The Client ID you copied from Salesforce</span>
               </div>
             </div>
           </div>
@@ -185,7 +185,7 @@ export default function SetupPage() {
               <div>
                 <strong>Invalid client_id:</strong>
                 <p className="text-[hsl(var(--muted-foreground))]">
-                  Double-check you copied the Consumer Key (not the Consumer Secret).
+                  Double-check you copied the Client ID (not the Client Secret).
                 </p>
               </div>
             </div>
