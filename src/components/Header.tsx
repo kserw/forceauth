@@ -19,6 +19,7 @@ export function Header({ openOrgDropdown, onOrgDropdownChange }: HeaderProps) {
   const { setActiveTab } = useTab();
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
+  const [orgRefreshKey, setOrgRefreshKey] = useState(0);
 
   const cycleTheme = () => {
     const next = preference === 'system' ? 'light' : preference === 'light' ? 'dark' : 'system';
@@ -76,7 +77,7 @@ export function Header({ openOrgDropdown, onOrgDropdownChange }: HeaderProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          <OrgDropdown onAddEnvironment={() => setIsConnectModalOpen(true)} />
+          <OrgDropdown onAddEnvironment={() => setIsConnectModalOpen(true)} refreshKey={orgRefreshKey} />
 
           <div className="w-px h-5 bg-[hsl(var(--border))]" />
 
@@ -117,7 +118,10 @@ export function Header({ openOrgDropdown, onOrgDropdownChange }: HeaderProps) {
 
       <ConnectOrgModal
         isOpen={isConnectModalOpen}
-        onClose={() => setIsConnectModalOpen(false)}
+        onClose={() => {
+          setIsConnectModalOpen(false);
+          setOrgRefreshKey(k => k + 1);
+        }}
       />
     </>
   );

@@ -6,19 +6,20 @@ import { getStoredOrgCredentials, clearStoredOrgCredentials, type StoredOrgCrede
 
 interface OrgDropdownProps {
   onAddEnvironment: () => void;
+  refreshKey?: number;
 }
 
-export function OrgDropdown({ onAddEnvironment }: OrgDropdownProps) {
+export function OrgDropdown({ onAddEnvironment, refreshKey }: OrgDropdownProps) {
   const { isAuthenticated, user, login, logout, setSelectedOrgId } = useAuth();
   const { setDemoMode } = useDemoMode();
   const [isOpen, setIsOpen] = useState(false);
   const [storedCredentials, setStoredCredentials] = useState<StoredOrgCredentials | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Load stored credentials on mount
+  // Load stored credentials on mount and when refreshKey changes
   useEffect(() => {
     setStoredCredentials(getStoredOrgCredentials());
-  }, []);
+  }, [refreshKey]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
