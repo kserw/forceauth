@@ -147,10 +147,10 @@ export const mockUserGrowth: UserGrowthStat[] = [
   { month: 'Feb', count: 42, cumulative: 1234 },
 ];
 
-// Mock logins by day (last 14 days)
+// Mock logins by day (last 28 days for comparison)
 const generateMockLoginsByDay = (): LoginDayStat[] => {
   const result: LoginDayStat[] = [];
-  for (let i = 13; i >= 0; i--) {
+  for (let i = 27; i >= 0; i--) {
     const date = new Date(now);
     date.setDate(date.getDate() - i);
     const isWeekend = date.getDay() === 0 || date.getDay() === 6;

@@ -54,21 +54,22 @@ export function UsersChart() {
     ? ((latestGrowth.cumulative - previousGrowth.cumulative) / previousGrowth.cumulative * 100).toFixed(1)
     : '0';
 
-  // Split into current 14 days and previous 14 days
-  const currentPeriod = displayLoginsByDay.slice(-14);
-  const previousPeriod = displayLoginsByDay.slice(0, 14);
+  // Split into current 14 days and previous 14 days (if we have 28 days of data)
+  const hasComparisonData = displayLoginsByDay.length >= 28;
+  const currentPeriod = hasComparisonData ? displayLoginsByDay.slice(-14) : displayLoginsByDay;
+  const previousPeriod = hasComparisonData ? displayLoginsByDay.slice(0, 14) : [];
 
-  const totalLogins = currentPeriod.reduce((sum, d) => sum + d.count, 0);
-  const prevLogins = previousPeriod.reduce((sum, d) => sum + d.count, 0);
-  const loginsChange = prevLogins > 0 ? ((totalLogins - prevLogins) / prevLogins * 100).toFixed(1) : '0';
+  const totalLogins = currentPeriod.reduce((sum, d) => sum + (d.count || 0), 0);
+  const prevLogins = previousPeriod.reduce((sum, d) => sum + (d.count || 0), 0);
+  const loginsChange = prevLogins > 0 ? ((totalLogins - prevLogins) / prevLogins * 100).toFixed(1) : null;
 
-  const totalFailed = currentPeriod.reduce((sum, d) => sum + d.failCount, 0);
-  const prevFailed = previousPeriod.reduce((sum, d) => sum + d.failCount, 0);
-  const failedChange = prevFailed > 0 ? ((totalFailed - prevFailed) / prevFailed * 100).toFixed(1) : '0';
+  const totalFailed = currentPeriod.reduce((sum, d) => sum + (d.failCount || 0), 0);
+  const prevFailed = previousPeriod.reduce((sum, d) => sum + (d.failCount || 0), 0);
+  const failedChange = prevFailed > 0 ? ((totalFailed - prevFailed) / prevFailed * 100).toFixed(1) : null;
 
   // Format date range
   const formatDateRange = (data: LoginDayStat[]) => {
-    if (data.length === 0) return '';
+    if (data.length === 0) return 'last 14 days';
     const start = new Date(data[0].date);
     const end = new Date(data[data.length - 1].date);
     const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -185,7 +186,7 @@ export function UsersChart() {
             <span className="text-3xl font-semibold text-[hsl(var(--foreground))] tabular-nums">
               {totalLogins.toLocaleString()}
             </span>
-            {Number(loginsChange) !== 0 && (
+            {loginsChange !== null && Number(loginsChange) !== 0 && (
               <div className={`flex items-center gap-1 text-xs ${Number(loginsChange) > 0 ? 'text-[hsl(var(--success))]' : 'text-[hsl(var(--muted-foreground))]'}`}>
                 {Number(loginsChange) > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                 <span className="tabular-nums">{Number(loginsChange) > 0 ? '+' : ''}{loginsChange}%</span>
@@ -218,7 +219,7 @@ export function UsersChart() {
             <span className="text-3xl font-semibold text-[hsl(var(--destructive))] tabular-nums">
               {totalFailed.toLocaleString()}
             </span>
-            {Number(failedChange) !== 0 && (
+            {failedChange !== null && Number(failedChange) !== 0 && (
               <div className={`flex items-center gap-1 text-xs ${Number(failedChange) > 0 ? 'text-[hsl(var(--destructive))]' : 'text-[hsl(var(--success))]'}`}>
                 {Number(failedChange) > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                 <span className="tabular-nums">{Number(failedChange) > 0 ? '+' : ''}{failedChange}%</span>
