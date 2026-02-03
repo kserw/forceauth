@@ -63,7 +63,7 @@ export function OrgDropdown({ onAddEnvironment }: OrgDropdownProps) {
     setIsOpen(false);
   };
 
-  const orgName = isAuthenticated ? user?.orgName : storedCredentials?.orgName;
+  const orgName = storedCredentials?.orgName;
   const environment = storedCredentials?.environment;
 
   return (
