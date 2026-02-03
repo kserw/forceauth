@@ -4,7 +4,6 @@ import Link from 'next/link';
 import {
   type SalesforceEnvironment,
   storeOrgCredentials,
-  getStoredOrgCredentials,
   type StoredOrgCredentials,
 } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -25,15 +24,13 @@ export function ConnectOrgModal({ isOpen, onClose }: ConnectOrgModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load existing credentials if any
+  // Reset form when modal opens
   useEffect(() => {
     if (isOpen) {
-      const stored = getStoredOrgCredentials();
-      if (stored) {
-        setOrgName(stored.orgName || '');
-        setEnvironment(stored.environment);
-        setClientId(stored.clientId);
-      }
+      setOrgName('');
+      setEnvironment('sandbox');
+      setClientId('');
+      setError(null);
     }
   }, [isOpen]);
 
