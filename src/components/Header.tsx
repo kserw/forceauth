@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTab } from '../context/TabContext';
 import { OrgManager } from './OrgManager';
 import { CommandPalette } from './CommandPalette';
+import Link from 'next/link';
 
 interface HeaderProps {
   openOrgDropdown?: boolean;
@@ -47,13 +48,14 @@ export function Header({ openOrgDropdown, onOrgDropdownChange }: HeaderProps) {
   return (
     <header className="sticky top-0 z-50 flex items-center justify-between px-5 py-3 border-b border-[hsl(var(--border))] bg-[hsl(var(--background)/0.9)] backdrop-blur-md">
       <div className="flex items-center gap-2.5">
-        <button
+        <Link
+          href="/"
           onClick={() => setActiveTab('overview')}
           className="flex items-center gap-2 px-2 py-1 rounded bg-[hsl(var(--muted))] hover:bg-[hsl(var(--accent))] transition-colors"
         >
           <Terminal className="w-4 h-4 text-[hsl(var(--foreground))]" />
           <span className="text-sm font-medium text-[hsl(var(--foreground))]">forceauth</span>
-        </button>
+        </Link>
         {isAuthenticated && user?.orgName && (
           <>
             <span className="text-[hsl(var(--muted-foreground))]">//</span>

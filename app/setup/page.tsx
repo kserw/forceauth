@@ -1,8 +1,7 @@
 'use client';
 
-import { ArrowLeft, Copy, Check } from 'lucide-react';
+import { Copy, Check } from 'lucide-react';
 import { useState } from 'react';
-import Link from 'next/link';
 import { Header } from '../../src/components/Header';
 
 export default function SetupPage() {
@@ -19,18 +18,11 @@ export default function SetupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
+    <div className="min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))] flex flex-col">
       <Header />
-      <div className="max-w-3xl mx-auto px-6 py-12">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] mb-8"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Dashboard
-        </Link>
-
-        <h1 className="text-3xl font-bold mb-2">External Client App Setup</h1>
+      <main className="flex-1">
+        <div className="max-w-3xl mx-auto px-6 py-12">
+          <h1 className="text-3xl font-bold mb-2">External Client App Setup</h1>
         <p className="text-[hsl(var(--muted-foreground))] mb-8">
           Follow these steps to create a Salesforce External Client App for ForceAuth.
         </p>
@@ -193,16 +185,15 @@ export default function SetupPage() {
             </div>
           </div>
         </div>
-
-        <div className="mt-12 pt-8 border-t border-[hsl(var(--border))] text-center">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-[hsl(var(--info))] text-white rounded-lg hover:opacity-90"
-          >
-            Return to Dashboard
-          </Link>
         </div>
-      </div>
+      </main>
+
+      <footer className="px-6 py-4 border-t border-[hsl(var(--border))]">
+        <div className="flex items-center justify-between text-[10px] text-[hsl(var(--muted-foreground))]">
+          <span>forceauth v0.1.0</span>
+          <span>// built for salesforce admins</span>
+        </div>
+      </footer>
     </div>
   );
 }
