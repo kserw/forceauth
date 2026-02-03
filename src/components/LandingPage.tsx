@@ -1,5 +1,6 @@
 import { Shield, Activity, Users, Globe, Lock, Terminal, ChevronRight } from 'lucide-react';
 import { Header } from './Header';
+import Link from 'next/link';
 
 interface LandingPageProps {
   onGetStarted: () => void;
@@ -62,6 +63,12 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
             <p className="mt-3 text-[10px] text-[hsl(var(--muted-foreground))]">
               requires a salesforce connected app with oauth credentials
             </p>
+            <Link
+              href="/setup"
+              className="mt-2 inline-block text-xs text-[hsl(var(--info))] hover:underline"
+            >
+              setup_guide()
+            </Link>
           </div>
         </div>
       </main>
