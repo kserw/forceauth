@@ -10,6 +10,7 @@ import {
   getLoginsByType,
   salesforceQuery,
 } from '@/lib/salesforce';
+import { filterValidSalesforceIds } from '@/lib/security';
 
 interface LoginRecord {
   Id: string;
@@ -67,7 +68,7 @@ export async function GET() {
     ]);
 
     // Get user info for sessions
-    const userIds = [...new Set(sessions.map(s => s.UsersId))];
+    const userIds = filterValidSalesforceIds([...new Set(sessions.map(s => s.UsersId))]);
     const userMap = new Map<string, { Name: string; Username: string }>();
 
     if (userIds.length > 0) {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/stateless-session';
 import { getOAuthTokens, salesforceQuery } from '@/lib/salesforce';
+import { filterValidSalesforceIds } from '@/lib/security';
 
 interface OAuthTokenRecord {
   Id: string;
@@ -44,7 +45,7 @@ export async function GET() {
     const tokens = await getOAuthTokens(opts) as OAuthTokenRecord[];
 
     // Get user info for all token users
-    const userIds = [...new Set(tokens.map(t => t.UserId))];
+    const userIds = filterValidSalesforceIds([...new Set(tokens.map(t => t.UserId))]);
     const userMap = new Map<string, UserRecord>();
 
     if (userIds.length > 0) {

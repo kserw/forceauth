@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/stateless-session';
 import { salesforceQuery, getActiveSessions, getFailedLogins } from '@/lib/salesforce';
+import { filterValidSalesforceIds, parseIntWithBounds, PARAM_BOUNDS } from '@/lib/security';
 
 interface SessionRecord {
   Id: string;
@@ -28,7 +29,7 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const days = parseInt(searchParams.get('days') || '7', 10);
+    const days = parseIntWithBounds(searchParams.get('days'), PARAM_BOUNDS.days.default, PARAM_BOUNDS.days.min, PARAM_BOUNDS.days.max);
 
     const opts = { accessToken: session.accessToken, instanceUrl: session.instanceUrl };
 
@@ -36,7 +37,7 @@ export async function GET(request: Request) {
     const sessionResults = await getActiveSessions(opts, 500) as SessionRecord[];
 
     // Get user info for sessions
-    const userIds = [...new Set(sessionResults.map(s => s.UsersId))];
+    const userIds = filterValidSalesforceIds([...new Set(sessionResults.map(s => s.UsersId))]);
     const userMap = new Map<string, { Name: string; Username: string }>();
 
     if (userIds.length > 0) {

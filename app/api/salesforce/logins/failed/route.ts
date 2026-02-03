@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/stateless-session';
 import { getFailedLogins } from '@/lib/salesforce';
+import { parseIntWithBounds, PARAM_BOUNDS } from '@/lib/security';
 
 interface LoginRecord {
   Id: string;
@@ -23,13 +24,13 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const days = parseInt(searchParams.get('days') || '7', 10);
-    const limit = parseInt(searchParams.get('limit') || '100', 10);
+    const days = parseIntWithBounds(searchParams.get('days'), PARAM_BOUNDS.days.default, PARAM_BOUNDS.days.min, PARAM_BOUNDS.days.max);
+    const limit = parseIntWithBounds(searchParams.get('limit'), PARAM_BOUNDS.limit.default, PARAM_BOUNDS.limit.min, PARAM_BOUNDS.limit.max);
 
     const results = await getFailedLogins(
       { accessToken: session.accessToken, instanceUrl: session.instanceUrl },
       days,
-      Math.min(limit, 500)
+      limit
     ) as LoginRecord[];
 
     const logins = results.map(r => ({

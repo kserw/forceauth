@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/stateless-session';
 import { salesforceQuery } from '@/lib/salesforce';
+import { parseIntWithBounds, PARAM_BOUNDS } from '@/lib/security';
 
 interface LoginRecord {
   LoginTime: string;
@@ -15,7 +16,7 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const days = parseInt(searchParams.get('days') || '30', 10);
+    const days = parseIntWithBounds(searchParams.get('days'), 30, PARAM_BOUNDS.days.min, PARAM_BOUNDS.days.max);
 
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
