@@ -77,7 +77,7 @@ export function Header({ openOrgDropdown, onOrgDropdownChange }: HeaderProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          <OrgDropdown onAddEnvironment={() => setIsConnectModalOpen(true)} refreshKey={orgRefreshKey} />
+          <OrgDropdown key={orgRefreshKey} onAddEnvironment={() => setIsConnectModalOpen(true)} />
 
           <div className="w-px h-5 bg-[hsl(var(--border))]" />
 
