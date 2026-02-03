@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Moon, Sun, Monitor, Command, Terminal } from 'lucide-react';
+import { Moon, Sun, Monitor, Terminal } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useTab } from '../context/TabContext';
-import { CommandPalette } from './CommandPalette';
 import { ConnectOrgModal } from './ConnectOrgModal';
 import { OrgDropdown } from './OrgDropdown';
 import Link from 'next/link';
@@ -17,7 +16,6 @@ export function Header({ openOrgDropdown, onOrgDropdownChange }: HeaderProps) {
   const { preference, setPreference } = useTheme();
   const { isAuthenticated, user } = useAuth();
   const { setActiveTab } = useTab();
-  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
   const [orgRefreshKey, setOrgRefreshKey] = useState(0);
 
@@ -25,19 +23,6 @@ export function Header({ openOrgDropdown, onOrgDropdownChange }: HeaderProps) {
     const next = preference === 'system' ? 'light' : preference === 'light' ? 'dark' : 'system';
     setPreference(next);
   };
-
-  // Global keyboard shortcut for ⌘K
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        setIsCommandPaletteOpen(true);
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
 
   // Update browser tab title with org name
   useEffect(() => {
@@ -82,19 +67,6 @@ export function Header({ openOrgDropdown, onOrgDropdownChange }: HeaderProps) {
           <div className="w-px h-5 bg-[hsl(var(--border))]" />
 
           <button
-            onClick={() => setIsCommandPaletteOpen(true)}
-            className="flex items-center gap-2 px-2.5 py-1.5 rounded bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] text-xs hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--foreground))] transition-colors border border-transparent hover:border-[hsl(var(--border))]"
-          >
-            <Command className="w-3 h-3" />
-            <span>Search...</span>
-            <kbd className="ml-1 px-1 py-0.5 rounded bg-[hsl(var(--background))] text-[10px] border border-[hsl(var(--border))]">
-              ⌘K
-            </kbd>
-          </button>
-
-          <div className="w-px h-5 bg-[hsl(var(--border))]" />
-
-          <button
             onClick={cycleTheme}
             className="p-2 rounded hover:bg-[hsl(var(--muted))] transition-colors"
             aria-label={`Theme: ${preference}`}
@@ -109,11 +81,6 @@ export function Header({ openOrgDropdown, onOrgDropdownChange }: HeaderProps) {
             )}
           </button>
         </div>
-
-        <CommandPalette
-          isOpen={isCommandPaletteOpen}
-          onClose={() => setIsCommandPaletteOpen(false)}
-        />
       </header>
 
       <ConnectOrgModal
