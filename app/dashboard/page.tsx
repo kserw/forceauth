@@ -196,34 +196,30 @@ export default function DashboardPage() {
 
         {/* Permissions Tab */}
         {activeTab === 'permissions' && (
-          <div className="flex-1 flex flex-col min-h-0">
-            <div className="flex-1 grid grid-cols-12 gap-4 min-h-0">
-              <div className="col-span-12 lg:col-span-4 min-h-0">
-                <PermissionSetsPanel />
-              </div>
-              <div className="col-span-12 lg:col-span-4 min-h-0">
-                <ProfilePermissionsPanel />
-              </div>
-              <div className="col-span-12 lg:col-span-4 min-h-0">
-                <SystemAdminsPanel />
-              </div>
+          <div className="flex-1 grid grid-cols-12 gap-4 grid-rows-[1fr] min-h-0">
+            <div className="col-span-12 lg:col-span-4 min-h-0">
+              <PermissionSetsPanel />
+            </div>
+            <div className="col-span-12 lg:col-span-4 min-h-0">
+              <ProfilePermissionsPanel />
+            </div>
+            <div className="col-span-12 lg:col-span-4 min-h-0">
+              <SystemAdminsPanel />
             </div>
           </div>
         )}
 
         {/* System Tab */}
         {activeTab === 'system' && (
-          <div className="flex-1 flex flex-col min-h-0">
-            <div className="flex-1 grid grid-cols-12 gap-4 min-h-0">
-              <div className="col-span-12 lg:col-span-4 min-h-0">
-                <OrgLimitsPanel />
-              </div>
-              <div className="col-span-12 lg:col-span-4 min-h-0">
-                <AuditTrail />
-              </div>
-              <div className="col-span-12 lg:col-span-4 min-h-0">
-                <DataAuditPanel />
-              </div>
+          <div className="flex-1 grid grid-cols-12 gap-4 grid-rows-[1fr] min-h-0">
+            <div className="col-span-12 lg:col-span-4 min-h-0">
+              <OrgLimitsPanel />
+            </div>
+            <div className="col-span-12 lg:col-span-4 min-h-0">
+              <AuditTrail />
+            </div>
+            <div className="col-span-12 lg:col-span-4 min-h-0">
+              <DataAuditPanel />
             </div>
           </div>
         )}
