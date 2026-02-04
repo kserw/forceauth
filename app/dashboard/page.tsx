@@ -65,8 +65,11 @@ export default function DashboardPage() {
     }
   }, [isAuthenticated, setDemoMode]);
 
+  // Single-row tabs should fill viewport exactly without scrolling
+  const isSingleRowTab = activeTab === 'permissions' || activeTab === 'system';
+
   return (
-    <div className="min-h-screen flex flex-col bg-[hsl(var(--background))]">
+    <div className={`flex flex-col bg-[hsl(var(--background))] ${isSingleRowTab ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
       <Header openOrgDropdown={openOrgDropdown} onOrgDropdownChange={setOpenOrgDropdown} />
 
       {error && (
@@ -86,7 +89,7 @@ export default function DashboardPage() {
         <DemoModeBanner onConnectOrg={() => setOpenOrgDropdown(true)} />
       )}
 
-      <main className="flex-1 px-5 py-5 space-y-5 flex flex-col">
+      <main className={`flex-1 px-5 py-5 flex flex-col min-h-0 ${isSingleRowTab ? '' : 'space-y-5'}`}>
         {/* Overview Tab */}
         {activeTab === 'overview' && (
           <>
