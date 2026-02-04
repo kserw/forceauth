@@ -142,12 +142,7 @@ export default function DashboardPage() {
                 <GuestUsersPanel />
               </div>
             </div>
-          </>
-        )}
 
-        {/* Activity Tab */}
-        {activeTab === 'activity' && (
-          <>
             <div className="grid grid-cols-12 gap-4">
               <div className="col-span-12 min-h-[400px]">
                 <ActiveSessions />

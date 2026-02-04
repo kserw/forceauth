@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 
-export type TabType = 'overview' | 'users' | 'activity' | 'integrations' | 'permissions' | 'system';
+export type TabType = 'overview' | 'users' | 'integrations' | 'permissions' | 'system';
 
 interface TabContextType {
   activeTab: TabType;

@@ -113,7 +113,7 @@ export function TopCities() {
 
       <div className="pt-3 border-t border-[hsl(var(--border))] mt-auto">
         <button
-          onClick={() => setActiveTab('activity')}
+          onClick={() => setActiveTab('users')}
           className="flex items-center gap-1 text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
         >
           view_all()

@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { LayoutDashboard, Activity, Users, Plug, Key, Settings, AlertTriangle, X, RefreshCw, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, Plug, Key, Settings, AlertTriangle, X, RefreshCw, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTab, type TabType } from '../context/TabContext';
 
 const tabs: { id: TabType; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'overview', label: 'overview', icon: LayoutDashboard },
   { id: 'users', label: 'users', icon: Users },
-  { id: 'activity', label: 'activity', icon: Activity },
   { id: 'integrations', label: 'integrations', icon: Plug },
   { id: 'permissions', label: 'permissions', icon: Key },
   { id: 'system', label: 'system', icon: Settings },
