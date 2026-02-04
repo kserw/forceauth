@@ -86,7 +86,7 @@ export default function DashboardPage() {
         <DemoModeBanner onConnectOrg={() => setOpenOrgDropdown(true)} />
       )}
 
-      <main className="flex-1 px-5 py-5 space-y-5">
+      <main className="flex-1 px-5 py-5 space-y-5 flex flex-col">
         {/* Overview Tab */}
         {activeTab === 'overview' && (
           <>
@@ -196,36 +196,32 @@ export default function DashboardPage() {
 
         {/* Permissions Tab */}
         {activeTab === 'permissions' && (
-          <>
-            <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-12 lg:col-span-4 min-h-[400px]">
-                <PermissionSetsPanel />
-              </div>
-              <div className="col-span-12 lg:col-span-4 min-h-[400px]">
-                <ProfilePermissionsPanel />
-              </div>
-              <div className="col-span-12 lg:col-span-4 min-h-[400px]">
-                <SystemAdminsPanel />
-              </div>
+          <div className="flex-1 grid grid-cols-12 gap-4 min-h-0">
+            <div className="col-span-12 lg:col-span-4">
+              <PermissionSetsPanel />
             </div>
-          </>
+            <div className="col-span-12 lg:col-span-4">
+              <ProfilePermissionsPanel />
+            </div>
+            <div className="col-span-12 lg:col-span-4">
+              <SystemAdminsPanel />
+            </div>
+          </div>
         )}
 
         {/* System Tab */}
         {activeTab === 'system' && (
-          <>
-            <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-12 lg:col-span-4 min-h-[400px]">
-                <OrgLimitsPanel />
-              </div>
-              <div className="col-span-12 lg:col-span-4 min-h-[400px]">
-                <AuditTrail />
-              </div>
-              <div className="col-span-12 lg:col-span-4 min-h-[400px]">
-                <DataAuditPanel />
-              </div>
+          <div className="flex-1 grid grid-cols-12 gap-4 min-h-0">
+            <div className="col-span-12 lg:col-span-4">
+              <OrgLimitsPanel />
             </div>
-          </>
+            <div className="col-span-12 lg:col-span-4">
+              <AuditTrail />
+            </div>
+            <div className="col-span-12 lg:col-span-4">
+              <DataAuditPanel />
+            </div>
+          </div>
         )}
 
       </main>
