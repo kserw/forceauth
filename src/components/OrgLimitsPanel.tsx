@@ -1,9 +1,9 @@
 import { useEffect, useState, useRef } from 'react';
-import { Loader2, AlertTriangle, CheckCircle, Gauge, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
+import { Loader2, AlertTriangle, CheckCircle, Gauge, ChevronLeft, ChevronRight, RefreshCw, Zap, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useDemoMode } from '../context/DemoModeContext';
-import { fetchOrgLimits, type OrgLimit } from '../services/api';
-import { mockOrgLimits } from '../data/mockData';
+import { fetchOrgLimits, fetchLicenses, type OrgLimit, type UserLicense } from '../services/api';
+import { mockOrgLimits, mockLicenses } from '../data/mockData';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -19,17 +19,22 @@ function formatLimitName(name: string): string {
     .trim();
 }
 
+function getUsageColor(percentage: number) {
+  if (percentage >= 90) return { bar: 'bg-[hsl(var(--destructive))]', ring: 'stroke-[hsl(var(--destructive))]', text: 'text-[hsl(var(--destructive))]' };
+  if (percentage >= 70) return { bar: 'bg-[hsl(var(--warning))]', ring: 'stroke-[hsl(var(--warning))]', text: 'text-[hsl(var(--warning))]' };
+  return { bar: 'bg-[hsl(var(--success))]', ring: 'stroke-[hsl(var(--success))]', text: 'text-[hsl(var(--success))]' };
+}
+
+function formatNumber(num: number): string {
+  if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+  if (num >= 1000) return `${(num / 1000).toFixed(0)}K`;
+  return num.toLocaleString();
+}
+
 function LimitBar({ name, limit }: LimitBarProps) {
   const used = limit.Max - limit.Remaining;
   const percentage = limit.Max > 0 ? (used / limit.Max) * 100 : 0;
-
-  const getColor = () => {
-    if (percentage >= 90) return { bar: 'bg-[hsl(var(--destructive))]', text: 'text-[hsl(var(--destructive))]' };
-    if (percentage >= 70) return { bar: 'bg-[hsl(var(--warning))]', text: 'text-[hsl(var(--warning))]' };
-    return { bar: 'bg-[hsl(var(--success))]', text: 'text-[hsl(var(--success))]' };
-  };
-
-  const colors = getColor();
+  const colors = getUsageColor(percentage);
 
   return (
     <div className="p-2 rounded hover:bg-[hsl(var(--muted)/0.3)] transition-colors">
@@ -54,10 +59,68 @@ function LimitBar({ name, limit }: LimitBarProps) {
   );
 }
 
+interface CircularGaugeProps {
+  used: number;
+  total: number;
+  label: string;
+  icon: React.ReactNode;
+}
+
+function CircularGauge({ used, total, label, icon }: CircularGaugeProps) {
+  const percentage = total > 0 ? (used / total) * 100 : 0;
+  const colors = getUsageColor(percentage);
+
+  const radius = 36;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+
+  return (
+    <div className="flex flex-col items-center">
+      <div className="relative w-24 h-24">
+        <svg className="w-full h-full -rotate-90" viewBox="0 0 80 80">
+          <circle
+            cx="40"
+            cy="40"
+            r={radius}
+            fill="none"
+            stroke="hsl(var(--muted))"
+            strokeWidth="6"
+          />
+          <circle
+            cx="40"
+            cy="40"
+            r={radius}
+            fill="none"
+            className={colors.ring}
+            strokeWidth="6"
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            style={{ transition: 'stroke-dashoffset 0.5s ease-in-out' }}
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className={`text-lg font-bold tabular-nums ${colors.text}`}>
+            {percentage.toFixed(0)}%
+          </span>
+        </div>
+      </div>
+      <div className="mt-1 flex items-center gap-1 text-[hsl(var(--muted-foreground))]">
+        {icon}
+        <span className="text-[10px] uppercase tracking-wide">{label}</span>
+      </div>
+      <div className="text-[11px] text-[hsl(var(--foreground))] tabular-nums">
+        {formatNumber(used)} / {formatNumber(total)}
+      </div>
+    </div>
+  );
+}
+
 export function OrgLimitsPanel() {
   const { isAuthenticated, refreshKey } = useAuth();
   const { isDemoMode } = useDemoMode();
   const [limits, setLimits] = useState<Record<string, OrgLimit> | null>(null);
+  const [licenses, setLicenses] = useState<UserLicense[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
@@ -65,33 +128,49 @@ export function OrgLimitsPanel() {
 
   const showDemoIndicator = isDemoMode && !isAuthenticated;
 
-  const loadData = () => {
+  const loadData = async () => {
     if (!isAuthenticated) return;
 
     setIsLoading(true);
     setError(null);
 
-    fetchOrgLimits()
-      .then(data => {
-        setLimits(data);
-        setCurrentPage(0);
-      })
-      .catch((err) => {
-        console.error('Failed to fetch limits:', err);
-        setError(err.message);
-      })
-      .finally(() => setIsLoading(false));
+    try {
+      const [limitsData, licensesData] = await Promise.all([
+        fetchOrgLimits(),
+        fetchLicenses(),
+      ]);
+      setLimits(limitsData);
+      setLicenses(licensesData);
+      setCurrentPage(0);
+    } catch (err) {
+      console.error('Failed to fetch limits:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load data');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
     if (!isAuthenticated) {
       setLimits(null);
+      setLicenses(null);
       return;
     }
     loadData();
   }, [isAuthenticated, refreshKey]);
 
   const displayLimits = showDemoIndicator ? mockOrgLimits : limits;
+  const displayLicenses = showDemoIndicator ? mockLicenses : licenses;
+
+  // Get API usage from limits
+  const apiLimit = displayLimits?.DailyApiRequests;
+  const apiUsed = apiLimit ? apiLimit.Max - apiLimit.Remaining : 0;
+  const apiMax = apiLimit?.Max ?? 0;
+
+  // Get Salesforce license
+  const sfLicense = displayLicenses?.find(l => l.Name === 'Salesforce');
+  const licenseUsed = sfLicense?.UsedLicenses ?? 0;
+  const licenseTotal = sfLicense?.TotalLicenses ?? 0;
 
   if (!isAuthenticated && !isDemoMode) {
     return (
@@ -127,7 +206,7 @@ export function OrgLimitsPanel() {
     );
   }
 
-  const limitEntries = Object.entries(displayLimits!);
+  const limitEntries = Object.entries(displayLimits!).filter(([name]) => name !== 'DailyApiRequests');
   const criticalLimits = limitEntries.filter(([, l]) => {
     const pct = ((l.Max - l.Remaining) / l.Max) * 100;
     return pct >= 70;
@@ -170,6 +249,24 @@ export function OrgLimitsPanel() {
             <RefreshCw className={`w-3 h-3 text-[hsl(var(--muted-foreground))] ${isLoading ? 'animate-spin' : ''}`} />
           </button>
         </div>
+      </div>
+
+      {/* Circular Gauges */}
+      <div className="flex justify-center gap-6 pb-4 mb-4 border-b border-[hsl(var(--border))]">
+        <CircularGauge
+          used={apiUsed}
+          total={apiMax}
+          label="API Calls"
+          icon={<Zap className="w-3 h-3" />}
+        />
+        {licenseTotal > 0 && (
+          <CircularGauge
+            used={licenseUsed}
+            total={licenseTotal}
+            label="Licenses"
+            icon={<Users className="w-3 h-3" />}
+          />
+        )}
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto -mx-2 space-y-1">
