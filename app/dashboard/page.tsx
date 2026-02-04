@@ -218,13 +218,10 @@ export default function DashboardPage() {
               <div className="col-span-12 lg:col-span-4 min-h-[400px]">
                 <OrgLimitsPanel />
               </div>
-              <div className="col-span-12 lg:col-span-8 min-h-[400px]">
+              <div className="col-span-12 lg:col-span-4 min-h-[400px]">
                 <AuditTrail />
               </div>
-            </div>
-
-            <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-12 min-h-[350px]">
+              <div className="col-span-12 lg:col-span-4 min-h-[400px]">
                 <DataAuditPanel />
               </div>
             </div>
