@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Header } from '../../src/components/Header';
 import { StatsCards } from '../../src/components/StatsCards';
@@ -46,7 +46,7 @@ import { SystemAdminsPanel } from '../../src/components/SystemAdminsPanel';
 // System tab components
 import { DataAuditPanel } from '../../src/components/DataAuditPanel';
 
-export default function DashboardPage() {
+function DashboardContent() {
   const { error, clearError, isAuthenticated } = useAuth();
   const { activeTab } = useTab();
   const { isDemoMode, setDemoMode } = useDemoMode();
@@ -242,5 +242,13 @@ export default function DashboardPage() {
 
       <Navigation />
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[hsl(var(--background))]" />}>
+      <DashboardContent />
+    </Suspense>
   );
 }
