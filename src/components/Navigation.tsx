@@ -6,8 +6,8 @@ import { useTab, type TabType } from '../context/TabContext';
 const tabs: { id: TabType; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'overview', label: 'overview', icon: LayoutDashboard },
   { id: 'users', label: 'users', icon: Users },
-  { id: 'integrations', label: 'integrations', icon: Plug },
   { id: 'permissions', label: 'permissions', icon: Key },
+  { id: 'integrations', label: 'integrations', icon: Plug },
   { id: 'system', label: 'system', icon: Settings },
 ];
 
