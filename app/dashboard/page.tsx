@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Header } from '../../src/components/Header';
 import { StatsCards } from '../../src/components/StatsCards';
 import { UsersChart } from '../../src/components/UsersChart';
@@ -50,6 +51,16 @@ export default function DashboardPage() {
   const { activeTab } = useTab();
   const { isDemoMode, setDemoMode } = useDemoMode();
   const [openOrgDropdown, setOpenOrgDropdown] = useState(false);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // Open connect modal if ?connect=true is in URL
+  useEffect(() => {
+    if (searchParams.get('connect') === 'true') {
+      setOpenOrgDropdown(true);
+      router.replace('/dashboard', { scroll: false });
+    }
+  }, [searchParams, router]);
 
   // Scroll to top when tab changes
   useEffect(() => {

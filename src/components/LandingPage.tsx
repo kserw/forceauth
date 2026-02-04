@@ -60,7 +60,7 @@ export function LandingPage() {
           {/* CTA */}
           <div className="text-center">
             <Link
-              href="/dashboard"
+              href={hasOrg ? '/dashboard' : '/dashboard?connect=true'}
               className="inline-flex items-center gap-2 px-6 py-3 rounded-md bg-[hsl(var(--foreground))] text-[hsl(var(--background))] text-sm font-medium hover:opacity-90 transition-opacity"
             >
               {hasOrg ? 'go_to_dashboard' : 'connect_org'}
