@@ -492,3 +492,26 @@ export async function getUserLicenses(options: SalesforceApiOptions): Promise<Us
   `;
   return salesforceQuery<UserLicenseRecord>(options, soql);
 }
+
+// System admin user record type
+export interface SystemAdminRecord {
+  Id: string;
+  Username: string;
+  Name: string;
+  Email: string;
+  IsActive: boolean;
+  LastLoginDate: string | null;
+  CreatedDate: string;
+}
+
+// Get users with System Administrator profile
+export async function getSystemAdmins(options: SalesforceApiOptions): Promise<SystemAdminRecord[]> {
+  const soql = `
+    SELECT Id, Username, Name, Email, IsActive, LastLoginDate, CreatedDate
+    FROM User
+    WHERE Profile.Name = 'System Administrator'
+    ORDER BY Name
+    LIMIT 200
+  `;
+  return salesforceQuery<SystemAdminRecord>(options, soql);
+}

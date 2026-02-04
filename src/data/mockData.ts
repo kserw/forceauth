@@ -351,6 +351,25 @@ export const mockUserRiskScores = [
   { userId: 'demo-006', username: 'david.thompson@acme.com', name: 'David Thompson', email: 'david.thompson@acme.com', profile: 'Standard User', isActive: false, riskScore: 45, riskLevel: 'medium' as const, riskFactors: [{ factor: 'inactive_user', description: 'Account inactive but not deprovisioned', points: 30, severity: 'medium' as const }], lastLoginDate: daysAgo(15) },
 ];
 
+// Mock system admin users
+export interface MockSystemAdmin {
+  id: string;
+  username: string;
+  name: string;
+  email: string;
+  isActive: boolean;
+  lastLoginDate: string | null;
+  createdDate: string;
+}
+
+export const mockSystemAdmins: MockSystemAdmin[] = [
+  { id: 'admin-001', username: 'sarah.chen@acme.com', name: 'Sarah Chen', email: 'sarah.chen@acme.com', isActive: true, lastLoginDate: minutesAgo(12), createdDate: daysAgo(365) },
+  { id: 'admin-002', username: 'admin@acme.com', name: 'Admin User', email: 'admin@acme.com', isActive: true, lastLoginDate: hoursAgo(2), createdDate: daysAgo(730) },
+  { id: 'admin-003', username: 'it.support@acme.com', name: 'IT Support', email: 'it.support@acme.com', isActive: true, lastLoginDate: daysAgo(1), createdDate: daysAgo(180) },
+  { id: 'admin-004', username: 'backup.admin@acme.com', name: 'Backup Admin', email: 'backup.admin@acme.com', isActive: false, lastLoginDate: daysAgo(45), createdDate: daysAgo(400) },
+  { id: 'admin-005', username: 'dev.admin@acme.com', name: 'Dev Admin', email: 'dev.admin@acme.com', isActive: true, lastLoginDate: hoursAgo(6), createdDate: daysAgo(90) },
+];
+
 // Mock high risk users
 export const mockHighRiskUsers = [
   { userId: 'demo-001', userName: 'Sarah Chen', username: 'sarah.chen@acme.com', isActive: true, profile: 'System Administrator', permissionSetName: 'Admin_Access', permissionSetLabel: 'Admin Access', hasModifyAll: true, hasViewAll: true, hasAuthorApex: true },

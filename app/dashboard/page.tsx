@@ -42,6 +42,7 @@ import { ApiUsagePanel } from '../../src/components/ApiUsagePanel';
 // Permissions tab components
 import { PermissionSetsPanel } from '../../src/components/PermissionSetsPanel';
 import { ProfilePermissionsPanel } from '../../src/components/ProfilePermissionsPanel';
+import { SystemAdminsPanel } from '../../src/components/SystemAdminsPanel';
 
 // System tab components
 import { DataAuditPanel } from '../../src/components/DataAuditPanel';
@@ -219,6 +220,12 @@ export default function DashboardPage() {
               </div>
               <div className="col-span-12 lg:col-span-6 min-h-[400px]">
                 <ProfilePermissionsPanel />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-12 gap-4">
+              <div className="col-span-12 lg:col-span-6 min-h-[350px]">
+                <SystemAdminsPanel />
               </div>
             </div>
           </>

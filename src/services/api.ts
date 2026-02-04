@@ -630,6 +630,32 @@ export async function fetchLicenses(): Promise<UserLicense[]> {
   return data.licenses;
 }
 
+// System admin user type
+export interface SystemAdmin {
+  id: string;
+  username: string;
+  name: string;
+  email: string;
+  isActive: boolean;
+  lastLoginDate: string | null;
+  createdDate: string;
+}
+
+// Fetch system admin users
+export async function fetchSystemAdmins(): Promise<SystemAdmin[]> {
+  const response = await fetch(`${API_BASE}/salesforce/system-admins`, {
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) throw new Error('Not authenticated');
+    throw new Error('Failed to fetch system admins');
+  }
+
+  const data = await response.json();
+  return data.users;
+}
+
 // Fetch active sessions
 export async function fetchActiveSessions(limit = 100): Promise<ActiveSession[]> {
   const response = await fetch(`${API_BASE}/salesforce/sessions?limit=${limit}`, {
