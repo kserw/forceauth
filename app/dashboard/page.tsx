@@ -132,20 +132,19 @@ export default function DashboardPage() {
         {activeTab === 'users' && (
           <>
             <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-12 lg:col-span-4 min-h-[400px]">
-                <RecentUsers />
+              <div className="col-span-12 lg:col-span-4 flex flex-col gap-4">
+                <div className="h-[192px]">
+                  <ActiveSessions />
+                </div>
+                <div className="h-[192px]">
+                  <RecentUsers />
+                </div>
               </div>
               <div className="col-span-12 lg:col-span-4 min-h-[400px]">
                 <HighRiskUsersPanel />
               </div>
               <div className="col-span-12 lg:col-span-4 min-h-[400px]">
                 <GuestUsersPanel />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-12 min-h-[400px]">
-                <ActiveSessions />
               </div>
             </div>
 
