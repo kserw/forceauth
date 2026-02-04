@@ -21,12 +21,10 @@ import { useDemoMode } from '../../src/context/DemoModeContext';
 import { X } from 'lucide-react';
 
 // Users tab components
-import { UserRiskScoresPanel } from '../../src/components/UserRiskScoresPanel';
 import { HighRiskUsersPanel } from '../../src/components/HighRiskUsersPanel';
 import { GuestUsersPanel } from '../../src/components/GuestUsersPanel';
 
 // Activity tab components
-import { ConcurrentSessionsPanel } from '../../src/components/ConcurrentSessionsPanel';
 import { LoginAnomaliesPanel } from '../../src/components/LoginAnomaliesPanel';
 import { FailedLoginPatternsPanel } from '../../src/components/FailedLoginPatternsPanel';
 
@@ -137,16 +135,10 @@ export default function DashboardPage() {
               <div className="col-span-12 lg:col-span-4 min-h-[400px]">
                 <RecentUsers />
               </div>
-              <div className="col-span-12 lg:col-span-8 min-h-[400px]">
-                <UserRiskScoresPanel />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-12 lg:col-span-6 min-h-[350px]">
+              <div className="col-span-12 lg:col-span-4 min-h-[400px]">
                 <HighRiskUsersPanel />
               </div>
-              <div className="col-span-12 lg:col-span-6 min-h-[350px]">
+              <div className="col-span-12 lg:col-span-4 min-h-[400px]">
                 <GuestUsersPanel />
               </div>
             </div>
@@ -157,11 +149,8 @@ export default function DashboardPage() {
         {activeTab === 'activity' && (
           <>
             <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-12 lg:col-span-7 min-h-[400px]">
+              <div className="col-span-12 min-h-[400px]">
                 <ActiveSessions />
-              </div>
-              <div className="col-span-12 lg:col-span-5 min-h-[400px]">
-                <ConcurrentSessionsPanel />
               </div>
             </div>
 
