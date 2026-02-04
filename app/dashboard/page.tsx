@@ -198,16 +198,13 @@ export default function DashboardPage() {
         {activeTab === 'permissions' && (
           <>
             <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-12 lg:col-span-6 min-h-[400px]">
+              <div className="col-span-12 lg:col-span-4 min-h-[400px]">
                 <PermissionSetsPanel />
               </div>
-              <div className="col-span-12 lg:col-span-6 min-h-[400px]">
+              <div className="col-span-12 lg:col-span-4 min-h-[400px]">
                 <ProfilePermissionsPanel />
               </div>
-            </div>
-
-            <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-12 lg:col-span-6 min-h-[350px]">
+              <div className="col-span-12 lg:col-span-4 min-h-[400px]">
                 <SystemAdminsPanel />
               </div>
             </div>
