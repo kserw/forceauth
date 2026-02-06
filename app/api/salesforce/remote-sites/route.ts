@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/stateless-session';
 import { getRemoteSiteSettings } from '@/lib/salesforce';
+import { handleApiError } from '@/lib/api-error';
 
 interface RemoteSiteRecord {
   Id: string;
@@ -34,7 +35,6 @@ export async function GET() {
 
     return NextResponse.json({ sites });
   } catch (error) {
-    console.error('[Salesforce] Failed to fetch remote sites:', error);
-    return NextResponse.json({ error: 'Failed to fetch remote site settings' }, { status: 500 });
+    return handleApiError(error, 'fetch remote site settings');
   }
 }

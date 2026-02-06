@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/stateless-session';
 import { getOAuthTokens, salesforceQuery } from '@/lib/salesforce';
 import { filterValidSalesforceIds } from '@/lib/security';
+import { handleApiError } from '@/lib/api-error';
 
 interface OAuthTokenRecord {
   Id: string;
@@ -172,7 +173,6 @@ export async function GET() {
 
     return NextResponse.json({ apps: appRisks });
   } catch (error) {
-    console.error('[Salesforce] Failed to fetch token risk:', error);
-    return NextResponse.json({ error: 'Failed to fetch token risk data' }, { status: 500 });
+    return handleApiError(error, 'fetch token risk');
   }
 }

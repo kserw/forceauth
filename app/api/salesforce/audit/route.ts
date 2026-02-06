@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/stateless-session';
 import { getAuditTrail } from '@/lib/salesforce';
+import { handleApiError } from '@/lib/api-error';
 
 interface SalesforceAuditRecord {
   Id: string;
@@ -37,7 +38,6 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ events });
   } catch (error) {
-    console.error('[Salesforce] Failed to fetch audit trail:', error);
-    return NextResponse.json({ error: 'Failed to fetch audit trail' }, { status: 500 });
+    return handleApiError(error, 'fetch audit trail');
   }
 }

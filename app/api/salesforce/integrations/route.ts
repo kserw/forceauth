@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/stateless-session';
 import { getIntegrationUsers, getOAuthTokens, getInstalledPackages, getNamedCredentials } from '@/lib/salesforce';
+import { handleApiError } from '@/lib/api-error';
 
 interface IntegrationUserRecord {
   Id: string;
@@ -94,7 +95,6 @@ export async function GET() {
       namedCredentials,
     });
   } catch (error) {
-    console.error('[Salesforce] Failed to fetch integrations:', error);
-    return NextResponse.json({ error: 'Failed to fetch integrations data' }, { status: 500 });
+    return handleApiError(error, 'fetch integrations');
   }
 }

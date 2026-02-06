@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/stateless-session';
 import { getSecurityHealthCheck, salesforceQuery } from '@/lib/salesforce';
+import { handleApiError } from '@/lib/api-error';
 
 interface HealthCheckRecord {
   Score: number;
@@ -98,7 +99,6 @@ export async function GET() {
       overallScore,
     });
   } catch (error) {
-    console.error('[Salesforce] Failed to fetch config health:', error);
-    return NextResponse.json({ error: 'Failed to fetch config health data' }, { status: 500 });
+    return handleApiError(error, 'fetch config health');
   }
 }

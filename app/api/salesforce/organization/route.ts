@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/stateless-session';
 import { getOrganizationInfo } from '@/lib/salesforce';
+import { handleApiError } from '@/lib/api-error';
 
 interface OrgRecord {
   Id: string;
@@ -46,7 +47,6 @@ export async function GET() {
       createdDate: org.CreatedDate,
     });
   } catch (error) {
-    console.error('[Salesforce] Failed to fetch organization:', error);
-    return NextResponse.json({ error: 'Failed to fetch organization info' }, { status: 500 });
+    return handleApiError(error, 'fetch organization info');
   }
 }

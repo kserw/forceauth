@@ -9,6 +9,7 @@ import {
   LoginHistoryRecord,
 } from '@/lib/salesforce';
 import { parseIntWithBounds, PARAM_BOUNDS } from '@/lib/security';
+import { handleApiError } from '@/lib/api-error';
 
 export async function GET(request: Request) {
   try {
@@ -108,7 +109,6 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    console.error('[Salesforce] Failed to fetch anomalies:', error);
-    return NextResponse.json({ error: 'Failed to fetch anomalies data' }, { status: 500 });
+    return handleApiError(error, 'fetch anomalies');
   }
 }

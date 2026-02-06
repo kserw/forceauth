@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/stateless-session';
 import { getActiveSessions } from '@/lib/salesforce';
+import { handleApiError } from '@/lib/api-error';
 
 export async function GET(request: Request) {
   try {
@@ -35,7 +36,6 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ sessions });
   } catch (error) {
-    console.error('[Salesforce] Failed to fetch active sessions:', error);
-    return NextResponse.json({ error: 'Failed to fetch active sessions' }, { status: 500 });
+    return handleApiError(error, 'fetch sessions');
   }
 }

@@ -5,6 +5,13 @@ export interface SalesforceApiOptions {
   instanceUrl: string;
 }
 
+export class SalesforceAuthError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'SalesforceAuthError';
+  }
+}
+
 // Make a Salesforce REST API request
 export async function salesforceQuery<T>(
   options: SalesforceApiOptions,
@@ -21,6 +28,9 @@ export async function salesforceQuery<T>(
 
   if (!response.ok) {
     const error = await response.text();
+    if (response.status === 401) {
+      throw new SalesforceAuthError(`Session expired or invalid: ${error}`);
+    }
     throw new Error(`Salesforce query failed: ${error}`);
   }
 
@@ -40,6 +50,9 @@ export async function getOrgLimits(options: SalesforceApiOptions): Promise<Recor
 
   if (!response.ok) {
     const error = await response.text();
+    if (response.status === 401) {
+      throw new SalesforceAuthError(`Session expired or invalid: ${error}`);
+    }
     throw new Error(`Failed to fetch org limits: ${error}`);
   }
 

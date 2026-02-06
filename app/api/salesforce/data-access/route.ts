@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/stateless-session';
 import { getAuditTrail, getGuestUsers } from '@/lib/salesforce';
+import { handleApiError } from '@/lib/api-error';
 
 interface AuditRecord {
   Id: string;
@@ -78,7 +79,6 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error('[Salesforce] Failed to fetch data access:', error);
-    return NextResponse.json({ error: 'Failed to fetch data access data' }, { status: 500 });
+    return handleApiError(error, 'fetch data access');
   }
 }

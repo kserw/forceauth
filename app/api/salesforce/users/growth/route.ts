@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/stateless-session';
 import { salesforceQuery } from '@/lib/salesforce';
+import { handleApiError } from '@/lib/api-error';
 
 interface UserRecord {
   CreatedDate: string;
@@ -54,7 +55,6 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ growth });
   } catch (error) {
-    console.error('[Salesforce] Failed to fetch user growth:', error);
-    return NextResponse.json({ error: 'Failed to fetch user growth' }, { status: 500 });
+    return handleApiError(error, 'fetch user growth');
   }
 }

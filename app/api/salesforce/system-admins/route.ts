@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/stateless-session';
 import { getSystemAdmins } from '@/lib/salesforce';
+import { handleApiError } from '@/lib/api-error';
 
 export async function GET() {
   try {
@@ -26,7 +27,6 @@ export async function GET() {
 
     return NextResponse.json({ users });
   } catch (error) {
-    console.error('[Salesforce] Failed to fetch system admins:', error);
-    return NextResponse.json({ error: 'Failed to fetch system admins' }, { status: 500 });
+    return handleApiError(error, 'fetch system admins');
   }
 }

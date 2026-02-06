@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/stateless-session';
 import { salesforceQuery } from '@/lib/salesforce';
+import { handleApiError } from '@/lib/api-error';
 
 interface UserRecord {
   Id: string;
@@ -163,7 +164,6 @@ export async function GET() {
 
     return NextResponse.json({ users: userRiskScores });
   } catch (error) {
-    console.error('[Salesforce] Failed to fetch user risk scores:', error);
-    return NextResponse.json({ error: 'Failed to fetch user risk scores' }, { status: 500 });
+    return handleApiError(error, 'fetch user risk scores');
   }
 }

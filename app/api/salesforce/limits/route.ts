@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/stateless-session';
 import { getOrgLimits } from '@/lib/salesforce';
+import { handleApiError } from '@/lib/api-error';
 
 export async function GET() {
   try {
@@ -16,7 +17,6 @@ export async function GET() {
 
     return NextResponse.json({ limits });
   } catch (error) {
-    console.error('[Salesforce] Failed to fetch limits:', error);
-    return NextResponse.json({ error: 'Failed to fetch org limits' }, { status: 500 });
+    return handleApiError(error, 'fetch org limits');
   }
 }

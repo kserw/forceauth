@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/stateless-session';
 import { getLoginHistory } from '@/lib/salesforce';
+import { handleApiError } from '@/lib/api-error';
 
 interface SalesforceLoginRecord {
   Id: string;
@@ -46,7 +47,6 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ logins });
   } catch (error) {
-    console.error('[Salesforce] Failed to fetch login history:', error);
-    return NextResponse.json({ error: 'Failed to fetch login history' }, { status: 500 });
+    return handleApiError(error, 'fetch login history');
   }
 }

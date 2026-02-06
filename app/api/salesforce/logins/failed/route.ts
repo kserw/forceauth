@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/stateless-session';
 import { getFailedLogins } from '@/lib/salesforce';
 import { parseIntWithBounds, PARAM_BOUNDS } from '@/lib/security';
+import { handleApiError } from '@/lib/api-error';
 
 interface LoginRecord {
   Id: string;
@@ -49,7 +50,6 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ logins });
   } catch (error) {
-    console.error('[Salesforce] Failed to fetch failed logins:', error);
-    return NextResponse.json({ error: 'Failed to fetch failed logins' }, { status: 500 });
+    return handleApiError(error, 'fetch failed logins');
   }
 }

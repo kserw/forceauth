@@ -11,6 +11,7 @@ import {
   LoginHistoryRecord,
   SessionRecord,
 } from '@/lib/salesforce';
+import { handleApiError } from '@/lib/api-error';
 
 interface AuditRecord {
   Id: string;
@@ -153,7 +154,6 @@ export async function GET() {
       limits,
     });
   } catch (error) {
-    console.error('[Salesforce] Failed to fetch dashboard:', error);
-    return NextResponse.json({ error: 'Failed to fetch dashboard data' }, { status: 500 });
+    return handleApiError(error, 'fetch dashboard data');
   }
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/stateless-session';
 import { getOrgLimits, getOAuthTokens } from '@/lib/salesforce';
+import { handleApiError } from '@/lib/api-error';
 
 interface OAuthTokenRecord {
   Id: string;
@@ -73,7 +74,6 @@ export async function GET() {
       byApp,
     });
   } catch (error) {
-    console.error('[Salesforce] Failed to fetch API usage:', error);
-    return NextResponse.json({ error: 'Failed to fetch API usage data' }, { status: 500 });
+    return handleApiError(error, 'fetch API usage');
   }
 }

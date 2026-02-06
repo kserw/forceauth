@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/stateless-session';
 import { getAuthProviders } from '@/lib/salesforce';
+import { handleApiError } from '@/lib/api-error';
 
 interface AuthProviderRecord {
   Id: string;
@@ -34,7 +35,6 @@ export async function GET() {
 
     return NextResponse.json({ providers });
   } catch (error) {
-    console.error('[Salesforce] Failed to fetch auth providers:', error);
-    return NextResponse.json({ error: 'Failed to fetch auth providers' }, { status: 500 });
+    return handleApiError(error, 'fetch auth providers');
   }
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/stateless-session';
 import { getPermissionSets, getHighRiskUsers, salesforceQuery } from '@/lib/salesforce';
+import { handleApiError } from '@/lib/api-error';
 
 interface PermissionSetRecord {
   Id: string;
@@ -126,7 +127,6 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error('[Salesforce] Failed to fetch permissions:', error);
-    return NextResponse.json({ error: 'Failed to fetch permissions data' }, { status: 500 });
+    return handleApiError(error, 'fetch permissions');
   }
 }

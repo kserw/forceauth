@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/stateless-session';
 import { salesforceQuery } from '@/lib/salesforce';
 import { parseIntWithBounds, PARAM_BOUNDS } from '@/lib/security';
+import { handleApiError } from '@/lib/api-error';
 
 interface LoginRecord {
   LoginTime: string;
@@ -50,7 +51,6 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ stats });
   } catch (error) {
-    console.error('[Salesforce] Failed to fetch logins by day:', error);
-    return NextResponse.json({ error: 'Failed to fetch login stats' }, { status: 500 });
+    return handleApiError(error, 'fetch logins by day');
   }
 }
