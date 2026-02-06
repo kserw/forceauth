@@ -28,10 +28,10 @@ export async function salesforceQuery<T>(
 
   if (!response.ok) {
     const error = await response.text();
-    if (response.status === 401) {
+    if (response.status === 401 || response.status === 403) {
       throw new SalesforceAuthError(`Session expired or invalid: ${error}`);
     }
-    throw new Error(`Salesforce query failed: ${error}`);
+    throw new Error(`Salesforce query failed (${response.status}): ${error}`);
   }
 
   const data = await response.json();
