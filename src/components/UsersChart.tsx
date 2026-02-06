@@ -138,25 +138,27 @@ export function UsersChart() {
           </div>
           <p className="text-xs text-[hsl(var(--muted-foreground))] mb-4">// total users</p>
 
-          <div className="flex-1 min-h-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={displayUserGrowth} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorGrowth" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--foreground))" stopOpacity={0.1} />
-                    <stop offset="100%" stopColor="hsl(var(--foreground))" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} dy={8} />
-                <YAxis hide />
-                <Tooltip
-                  contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '4px', padding: '6px 10px', fontSize: '12px' }}
-                  labelStyle={{ color: 'hsl(var(--muted-foreground))', marginBottom: 2 }}
-                  formatter={(value, name) => [Number(value).toLocaleString(), name === 'cumulative' ? 'total' : 'new']}
-                />
-                <Area type="monotone" dataKey="cumulative" stroke="hsl(var(--foreground))" strokeWidth={1.5} fill="url(#colorGrowth)" dot={false} activeDot={{ r: 3, fill: 'hsl(var(--foreground))', strokeWidth: 0 }} />
-              </AreaChart>
-            </ResponsiveContainer>
+          <div className="flex-1 min-h-0 relative">
+            <div className="absolute inset-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={displayUserGrowth} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorGrowth" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(var(--foreground))" stopOpacity={0.1} />
+                      <stop offset="100%" stopColor="hsl(var(--foreground))" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} dy={8} />
+                  <YAxis hide />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '4px', padding: '6px 10px', fontSize: '12px' }}
+                    labelStyle={{ color: 'hsl(var(--muted-foreground))', marginBottom: 2 }}
+                    formatter={(value, name) => [Number(value).toLocaleString(), name === 'cumulative' ? 'total' : 'new']}
+                  />
+                  <Area type="monotone" dataKey="cumulative" stroke="hsl(var(--foreground))" strokeWidth={1.5} fill="url(#colorGrowth)" dot={false} activeDot={{ r: 3, fill: 'hsl(var(--foreground))', strokeWidth: 0 }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </>
       )}
@@ -170,20 +172,22 @@ export function UsersChart() {
           </div>
           <p className="text-xs text-[hsl(var(--muted-foreground))] mb-4">// logins last 14 days</p>
 
-          <div className="flex-1 min-h-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={displayLoginsByDay} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
-                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} dy={8} tickFormatter={(v) => new Date(v).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} />
-                <YAxis hide />
-                <Tooltip
-                  contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '4px', padding: '6px 10px', fontSize: '12px' }}
-                  labelStyle={{ color: 'hsl(var(--muted-foreground))', marginBottom: 2 }}
-                  labelFormatter={(v) => new Date(v).toLocaleDateString()}
-                  formatter={(value) => [Number(value).toLocaleString(), 'logins']}
-                />
-                <Bar dataKey="successCount" fill="hsl(var(--success))" radius={[2, 2, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="flex-1 min-h-0 relative">
+            <div className="absolute inset-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={displayLoginsByDay} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} dy={8} tickFormatter={(v) => new Date(v).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} />
+                  <YAxis hide />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '4px', padding: '6px 10px', fontSize: '12px' }}
+                    labelStyle={{ color: 'hsl(var(--muted-foreground))', marginBottom: 2 }}
+                    labelFormatter={(v) => new Date(v).toLocaleDateString()}
+                    formatter={(value) => [Number(value).toLocaleString(), 'logins']}
+                  />
+                  <Bar dataKey="successCount" fill="hsl(var(--success))" radius={[2, 2, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </>
       )}
@@ -197,20 +201,22 @@ export function UsersChart() {
           </div>
           <p className="text-xs text-[hsl(var(--muted-foreground))] mb-4">// failed logins last 14 days</p>
 
-          <div className="flex-1 min-h-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={displayLoginsByDay} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
-                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} dy={8} tickFormatter={(v) => new Date(v).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} />
-                <YAxis hide />
-                <Tooltip
-                  contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '4px', padding: '6px 10px', fontSize: '12px' }}
-                  labelStyle={{ color: 'hsl(var(--muted-foreground))', marginBottom: 2 }}
-                  labelFormatter={(v) => new Date(v).toLocaleDateString()}
-                  formatter={(value) => [Number(value).toLocaleString(), 'failed']}
-                />
-                <Bar dataKey="failCount" fill="hsl(var(--destructive))" radius={[2, 2, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="flex-1 min-h-0 relative">
+            <div className="absolute inset-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={displayLoginsByDay} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} dy={8} tickFormatter={(v) => new Date(v).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} />
+                  <YAxis hide />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '4px', padding: '6px 10px', fontSize: '12px' }}
+                    labelStyle={{ color: 'hsl(var(--muted-foreground))', marginBottom: 2 }}
+                    labelFormatter={(v) => new Date(v).toLocaleDateString()}
+                    formatter={(value) => [Number(value).toLocaleString(), 'failed']}
+                  />
+                  <Bar dataKey="failCount" fill="hsl(var(--destructive))" radius={[2, 2, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </>
       )}
