@@ -23,7 +23,6 @@ import { X } from 'lucide-react';
 
 // Users tab components
 import { HighRiskUsersPanel } from '../../src/components/HighRiskUsersPanel';
-import { GuestUsersPanel } from '../../src/components/GuestUsersPanel';
 
 // Activity tab components
 import { LoginAnomaliesPanel } from '../../src/components/LoginAnomaliesPanel';
@@ -43,8 +42,6 @@ import { PermissionSetsPanel } from '../../src/components/PermissionSetsPanel';
 import { ProfilePermissionsPanel } from '../../src/components/ProfilePermissionsPanel';
 import { SystemAdminsPanel } from '../../src/components/SystemAdminsPanel';
 
-// System tab components
-import { DataAuditPanel } from '../../src/components/DataAuditPanel';
 
 function DashboardContent() {
   const { error, clearError, isAuthenticated } = useAuth();
@@ -154,11 +151,8 @@ function DashboardContent() {
                   <RecentUsers />
                 </div>
               </div>
-              <div className="col-span-12 lg:col-span-4 min-h-[400px]">
+              <div className="col-span-12 lg:col-span-8 min-h-[400px]">
                 <HighRiskUsersPanel />
-              </div>
-              <div className="col-span-12 lg:col-span-4 min-h-[400px]">
-                <GuestUsersPanel />
               </div>
             </div>
 
@@ -226,14 +220,11 @@ function DashboardContent() {
         {/* System Tab */}
         {activeTab === 'system' && (
           <div className="flex-1 grid grid-cols-12 gap-4 grid-rows-[1fr] min-h-0">
-            <div className="col-span-12 lg:col-span-4 min-h-0">
+            <div className="col-span-12 lg:col-span-6 min-h-0">
               <OrgLimitsPanel />
             </div>
-            <div className="col-span-12 lg:col-span-4 min-h-0">
+            <div className="col-span-12 lg:col-span-6 min-h-0">
               <AuditTrail />
-            </div>
-            <div className="col-span-12 lg:col-span-4 min-h-0">
-              <DataAuditPanel />
             </div>
           </div>
         )}
